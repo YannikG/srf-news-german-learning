@@ -13,12 +13,14 @@ backend/
     db/                # SQLite: Migrationen, Runner, init_database()
     persistence/       # SqlDatabase (SQLAlchemy Core engine for SQLite)
     health.py          # /api/health blueprint
-    words/             # dictionary API: routes, service, repository, ports, factory
+    articles/          # Artikel-API: routes, service, repository, ports, factory
+    words/             # Wörterbuch-API: routes, service, repository, ports, factory
+    settings/          # Einstellungen-API: routes, service, repository, ports, factory
   docs/
     architecture.md    # Schichtenmodell und Wiring
   tests/
     conftest.py        # Flask test client fixture
-    test_health.py
+    test_*_api.py      # API-Integration; test_db_schema, test_migration_runner, test_health
   wsgi.py              # gunicorn entry: `gunicorn wsgi:app`
   requirements.txt
   requirements-dev.txt
@@ -72,12 +74,21 @@ flask --app wsgi init-db
 
 ## Tests
 
-Run from the `backend/` directory so pytest picks up `pyproject.toml` and the `app` package:
+**Phase-2 layers:** API integration tests use Flask's test client (`client` in `tests/conftest.py`) against a temporary SQLite database; schema and migration tests assert SQL and the migration runner; small unit tests target pure helpers (for example migration bookkeeping validation) without HTTP.
+
+**CI:** the same suite runs in GitHub Actions in [`.github/workflows/quality.yml`](../.github/workflows/quality.yml) under the job **Backend (pytest)** on pull requests and on pushes to `master` (Python 3.12, `pip install -r requirements.txt` and `-r requirements-dev.txt`, then `pytest` in `backend/`). No external services are required for the default test run.
+
+Run locally from the **repository root** (parent of `backend/`) so `cd backend` is correct; then `pytest` picks up `pyproject.toml` and the `app` package.
 
 ```bash
 cd backend
+source .venv/bin/activate   # Unix: venv created as backend/.venv from repo root
 pytest
 ```
+
+On Windows PowerShell, from the repository root: `cd backend`, then `.venv\Scripts\Activate.ps1` if the venv was created as `backend/.venv` (or activate your own venv path), then run `pytest`.
+
+If the virtual environment lives elsewhere, activate it first, then `cd backend` from the repository root and run `pytest`. Install dependencies once per [Local setup](#local-setup-relative-to-repo-root).
 
 The health test uses Flask's test client and does not require a running container.
 
