@@ -80,6 +80,6 @@ def map_article_to_app_db_fields(
         "title": display_title,
         "lead": lead_out,
         "markdown_original": markdown_original,
-        "release_date": article.releaseDate,
-        "modification_date": article.modificationDate,
+        "release_date": article.release_date,
+        "modification_date": article.modification_date,
     }

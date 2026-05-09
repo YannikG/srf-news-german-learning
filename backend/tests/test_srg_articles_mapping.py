@@ -46,6 +46,14 @@ def test_strip_markdown_images_reference_style() -> None:
     assert "![x][y]" not in strip_markdown_images(text)
 
 
+def test_strip_markdown_images_balanced_parens_in_url() -> None:
+    text = r"Vor ![](https://cdn.example/x(1).png) nach"
+    cleaned = strip_markdown_images(text)
+    assert "![](" not in cleaned
+    assert ".png)" not in cleaned
+    assert "Vor" in cleaned and "nach" in cleaned
+
+
 def test_model_validate_accepts_python_dict() -> None:
     data = json.loads(_FIXTURE.read_text(encoding="utf-8"))
     page = ArticleListPage.model_validate(data)
@@ -57,8 +65,8 @@ def test_map_article_fallback_title_when_id_and_texts_empty() -> None:
         id="",
         publisher="SRF",
         provenance="CMS_SRF",
-        accessConditions=[AccessCondition(name="Free")],
-        identifiers=[SrgIdentifier(value="", type="PdpId")],
+        access_conditions=[AccessCondition(name="Free")],
+        identifiers=[SrgIdentifier(value="", identifier_type="PdpId")],
         title=None,
         lead=None,
         content=None,
