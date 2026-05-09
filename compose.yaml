@@ -1,0 +1,33 @@
+# Stack from repository root: `docker compose up` / `docker compose up -d`
+# See README.md and docs/roadmap/phase-1/README.md
+
+services:
+  web:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - app_db:/data/app.db
+      - vectors_db:/data/vectors.db
+    depends_on:
+      - ollama
+      - sidecar
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  sidecar:
+    image: alpine:3.21
+    command: ["sleep", "infinity"]
+    restart: unless-stopped
+
+volumes:
+  app_db:
+  vectors_db:
+  ollama_data:
