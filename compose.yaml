@@ -1,0 +1,32 @@
+# Stack from repository root: `docker compose up` / `docker compose up -d`
+# See README.md and docs/roadmap/phase-1/README.md
+
+services:
+  web:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      # Single directory mount: SQLite expects files under /data, not named volumes on file paths.
+      - app_data:/data
+    depends_on:
+      - ollama
+      - sidecar
+
+  ollama:
+    image: ollama/ollama:0.23.2
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  sidecar:
+    image: alpine:3.21
+    command: ["sleep", "infinity"]
+    restart: unless-stopped
+
+volumes:
+  app_data:
+  ollama_data:

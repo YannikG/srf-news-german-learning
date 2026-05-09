@@ -1,6 +1,6 @@
 # Phase 1: Fundament
 
-**Endzustand:** Vom Repository-Root startet der Stack mit `docker compose up` bzw. `docker compose up -d`; der Web-Container liefert einen verifizierbaren Health-Endpoint; lokales Backend-Setup ist mit `venv` und `requirements.txt` dokumentiert; **Ruff** und **Prettier** sind konfiguriert; **GitHub Actions** laufen bei PR und Push auf den Default-Branch und prüfen Format sowie Lint (Quality Gates); **Husky** (mit **lint-staged**) führt vor jedem Commit dieselben Checks auf gestagten Dateien aus.
+**Endzustand:** Vom Repository-Root startet der Stack mit `docker compose up` bzw. `docker compose up -d` (siehe Root-`compose.yaml` und [`README.md`](../../../README.md#docker-compose-repository-root)); der Web-Container liefert einen verifizierbaren Health-Endpoint; lokales Backend-Setup ist mit `venv` und `requirements.txt` dokumentiert; **Ruff** und **Prettier** sind konfiguriert; **GitHub Actions** laufen bei PR und Push auf den Default-Branch und prüfen Format sowie Lint (Quality Gates); **Husky** (mit **lint-staged**) führt vor jedem Commit dieselben Checks auf gestagten Dateien aus.
 
 ## DoD
 
