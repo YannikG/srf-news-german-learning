@@ -1,8 +1,9 @@
 """Flask application factory.
 
-Registers health, dictionary, and article read blueprints; bootstraps ``app.db`` on first start when
-the file at ``DATABASE_PATH`` is missing, and accepts an optional ``test_config`` map
-so tests and environments can inject settings without mutating an already-built app.
+Registers health, dictionary, article read, and settings blueprints; bootstraps ``app.db`` on
+first start when the file at ``DATABASE_PATH`` is missing, and accepts an optional
+``test_config`` map so tests and environments can inject settings without mutating an
+already-built app.
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ from .articles import articles_bp
 from .db import APP_DB_PATH, init_database
 from .health import health_bp
 from .persistence import SQL_DATABASE_EXTENSION_KEY, SqlDatabase
+from .settings import settings_bp
 from .words import words_bp
 
 
@@ -40,6 +42,7 @@ def create_app(test_config: Mapping[str, Any] | None = None) -> Flask:
     app.register_blueprint(health_bp, url_prefix="/api")
     app.register_blueprint(words_bp, url_prefix="/api")
     app.register_blueprint(articles_bp, url_prefix="/api")
+    app.register_blueprint(settings_bp, url_prefix="/api")
 
     _register_cli(app)
     return app
