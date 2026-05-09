@@ -116,6 +116,20 @@ def test_token_missing_access_token_raises() -> None:
         client.close()
 
 
+def test_token_json_not_object_raises() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=["not-an-object"])
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    try:
+        oauth = SrgOAuthClient("k", "s", http_client=client)
+        with pytest.raises(SrgOAuthTokenResponseError) as exc:
+            oauth.get_access_token()
+        assert "object" in str(exc.value).lower()
+    finally:
+        client.close()
+
+
 def test_settings_reads_consumer_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SRGSSR_CONSUMER_KEY", "env-key")
     monkeypatch.setenv("SRGSSR_CONSUMER_SECRET", "env-secret")

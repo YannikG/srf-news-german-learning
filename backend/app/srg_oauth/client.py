@@ -5,7 +5,6 @@ from __future__ import annotations
 import threading
 import time
 from collections.abc import Callable
-from typing import Any
 
 import httpx
 
@@ -97,15 +96,16 @@ class SrgOAuthClient:
                 f"SRG OAuth token request failed with status {response.status_code}.",
                 response.status_code,
             )
-        payload: dict[str, Any]
         try:
-            payload = response.json()
+            parsed = response.json()
         except ValueError as exc:
             raise SrgOAuthTokenResponseError("Token response is not valid JSON.") from exc
-        access_token = payload.get("access_token")
+        if not isinstance(parsed, dict):
+            raise SrgOAuthTokenResponseError("Token response JSON must be an object.")
+        access_token = parsed.get("access_token")
         if not isinstance(access_token, str) or not access_token:
             raise SrgOAuthTokenResponseError("Token response missing access_token string.")
-        expires_in_raw = payload.get("expires_in", _DEFAULT_EXPIRES_IN)
+        expires_in_raw = parsed.get("expires_in", _DEFAULT_EXPIRES_IN)
         try:
             expires_in = int(expires_in_raw)
         except (TypeError, ValueError):
