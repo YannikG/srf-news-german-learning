@@ -44,8 +44,9 @@ def _strip_inline_markdown_images(text: str) -> str:
         if depth == 0:
             i = k
         else:
-            out.append(text[start])
-            i = start + 1
+            # Kein passendes ``)`` (z. B. abgeschnitten): Rest wörtlich behalten, linear in ``n``.
+            out.append(text[start:])
+            break
     return "".join(out)
 
 

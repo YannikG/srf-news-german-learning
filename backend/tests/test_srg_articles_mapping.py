@@ -54,6 +54,11 @@ def test_strip_markdown_images_balanced_parens_in_url() -> None:
     assert "Vor" in cleaned and "nach" in cleaned
 
 
+def test_strip_markdown_images_unclosed_image_keeps_literal_suffix() -> None:
+    text = "a ![x](https://example.invalid/no-close-paren"
+    assert strip_markdown_images(text) == text
+
+
 def test_model_validate_accepts_python_dict() -> None:
     data = json.loads(_FIXTURE.read_text(encoding="utf-8"))
     page = ArticleListPage.model_validate(data)
