@@ -2,7 +2,8 @@
 
 | Pfad | Inhalt |
 |------|--------|
-| [`collaboration.md`](./collaboration.md) | SSOT: wo Spec vs. Tracker; Regeln zum Ändern von Specs |
+| [`collaboration.md`](./collaboration.md) | Wo Spec vs. Tracker; Regeln zum Ändern von Specs |
+| [`github-cli.md`](./github-cli.md) | `gh issue develop`, `gh issue view` (für Agenten-Skills) |
 | [`phase-planning-for-agents.md`](./phase-planning-for-agents.md) | Kurzworkflow: Phase planen, DoD, Issue-Regeln |
 
 ## Roadmap
