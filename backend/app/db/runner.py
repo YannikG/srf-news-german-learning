@@ -1,4 +1,8 @@
-"""Apply pending migrations from ``app/db/sql/*.sql`` in filename order."""
+"""Apply pending migrations from ``app/db/sql/*.sql`` in filename order.
+
+``PRAGMA foreign_keys = ON`` is set on the migration connection only; any future
+app-level SQLite helper should run the same pragma on each new connection.
+"""
 
 from __future__ import annotations
 

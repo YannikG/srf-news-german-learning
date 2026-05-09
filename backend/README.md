@@ -53,8 +53,9 @@ curl -fsS http://localhost:8000/api/health
 Schema und idempotente Initialisierung (Phase 2, P2-I01): Tabellen `articles`, `words`, `article_words`, `settings`, `srg_sync_metadata` plus Buchhaltung in `_migrations` (numerische `id`, `migration_id`, `applied_at`).
 
 - **Pfad:** fest `/data/app.db` (gleicher Mount wie in `compose.yaml` unter `/data` im `web`-Service). `pytest` setzt `DATABASE_PATH` auf eine temporäre Datei.
-- **Beim Start:** Existiert die Datei unter `DATABASE_PATH` noch nicht, legt `create_app()` sie inklusive Schema an. Existiert sie schon, bleibt sie unangetastet.
+- **Beim Start:** Existiert die Datei unter `DATABASE_PATH` noch nicht, legt `create_app()` sie inklusive Schema an. Existiert sie schon, bleibt sie unangetastet (kein automatisches Nachziehen neuer Migrationen bei jedem Start; das wäre mehrfach bei mehreren Workern und verdeckt Deploy-Schritte). Nach einem Deploy mit neuen SQL-Dateien: `flask init-db` ausführen.
 - **Migrationen:** SQL-Dateien unter `app/db/sql/`, lexikographisch nach Dateiname (z. B. `001_initial.sql`, dann `002_….sql`). Pro erfolgreicher Datei eine Zeile in `_migrations` (`migration_id` entspricht dem Dateistamm ohne `.sql`). Neue Datei immer **anhängen**, bestehende Dateien nicht ändern.
+- **Foreign Keys:** `PRAGMA foreign_keys = ON` gilt nur auf der Verbindung im Migrations-Runner. Sobald die App eigene DB-Verbindungen öffnet, dieselbe Pragma-Zeile pro neuer Connection setzen (z. B. in einem zentralen DB-Helfer oder `before_request`).
 - **CLI:** `flask --app wsgi init-db` wendet alle ausstehenden Migrationen an (auch auf einer bestehenden Datei, z. B. nach einem Deploy).
 
 ```bash

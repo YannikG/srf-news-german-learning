@@ -33,6 +33,14 @@ EXPECTED_INDEXES = frozenset(
     },
 )
 
+EXPECTED_TRIGGERS = frozenset(
+    {
+        "trg_articles_updated_at",
+        "trg_srg_sync_metadata_updated_at",
+        "trg_words_updated_at",
+    },
+)
+
 
 def _table_columns(conn: sqlite3.Connection, table: str) -> dict[str, str]:
     cur = conn.execute(f"PRAGMA table_info({table})")
@@ -43,6 +51,11 @@ def _index_names(conn: sqlite3.Connection) -> set[str]:
     cur = conn.execute(
         "SELECT name FROM sqlite_master WHERE type = 'index' AND name NOT LIKE 'sqlite_%'",
     )
+    return {row[0] for row in cur.fetchall()}
+
+
+def _trigger_names(conn: sqlite3.Connection) -> set[str]:
+    cur = conn.execute("SELECT name FROM sqlite_master WHERE type = 'trigger'")
     return {row[0] for row in cur.fetchall()}
 
 
@@ -87,6 +100,8 @@ def test_all_tables_and_indexes_exist(tmp_path: Path) -> None:
         assert tables == EXPECTED_TABLES
 
         assert _index_names(conn) == EXPECTED_INDEXES
+
+        assert _trigger_names(conn) == EXPECTED_TRIGGERS
 
         articles = _table_columns(conn, "articles")
         assert "cefr_level" in articles

@@ -31,6 +31,8 @@ def create_app(test_config: Mapping[str, Any] | None = None) -> Flask:
     if db_path_str:
         db_path = Path(db_path_str)
         if not db_path.is_file():
+            # First boot only: create the file and apply all migrations. For schema
+            # updates on an existing file, run `flask init-db` (not every app start).
             init_database(db_path)
 
     _register_cli(app)
