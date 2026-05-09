@@ -10,7 +10,7 @@
 
 ## Kurz: kritischer Pfad
 
-1. **Phase 1** zuerst (Compose + Flask + Health).  
+1. **Phase 1** zuerst (Compose + Flask + Health + Quality Gates: Ruff, Prettier, GitHub Actions auf PR und Push).  
 2. **Phase 2** danach (`app.db`, APIs ohne SRG/Ollama).  
 3. **Phase 3** und **Phase 4** können parallel arbeiten, sobald Phase 1 steht (unterschiedliche Artefakte).  
 4. **Phase 5** erst, wenn **Phase 2 und Phase 4** die benötigten Schnittstellen haben (DB + Ollama-Lifecycle/SSE-Basis).  

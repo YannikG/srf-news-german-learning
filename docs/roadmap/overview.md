@@ -4,7 +4,7 @@ Master-Reihenfolge der Arbeit. Einstieg und Finalisierung: [README.md](./README.
 
 | Order | Phase | Kurzbeschreibung | Link |
 |------:|--------|------------------|------|
-| 1 | Fundament | Repo-Layout, Docker Compose vom Root, Flask-Skelett, Health | [./phase-1/README.md](./phase-1/README.md) |
+| 1 | Fundament | Repo-Layout, Docker Compose, Flask-Skelett, Health, Ruff/Prettier, CI auf PR und Push | [./phase-1/README.md](./phase-1/README.md) |
 | 2 | Datenbank app.db | Schema, Wörterbuch- und Artikel-API (nur DB), FTS, Einstellungen | [./phase-2/README.md](./phase-2/README.md) |
 | 3 | SRG Upstream | OAuth2 Client Credentials, Refresh mit 15-Min-Cooldown, Ingest | [./phase-3/README.md](./phase-3/README.md) |
 | 4 | Ollama Lifecycle | Sidecar Start/Stop, Idle, Warnung, Sleep, SSE-Grundlage | [./phase-4/README.md](./phase-4/README.md) |
@@ -38,7 +38,7 @@ Phase 4 kann nach Phase 1 parallel zu Phase 2 beginnen (getrennte Oberflächen),
 
 ## Review und Finalisierung (2026-05-09)
 
-- **Abdeckung:** Sieben Phasen, 23 Issue-Specs (darunter ein optionales P6-I06); Abhängigkeiten zwischen Specs per relativem Link geprüft; Cross-Phase-Links nutzen `../../phase-M/issues/...`.
+- **Abdeckung:** Sieben Phasen, 25 Issue-Specs (darunter ein optionales P6-I06); Abhängigkeiten zwischen Specs per relativem Link geprüft; Cross-Phase-Links nutzen `../../phase-M/issues/...`.
 - **Kritischer Pfad:** `P1 → P2 → P3` und parallel `P1 → P4`; danach `P5` (braucht `P2` + `P4`); `P6` nach funktionalen Backend-Endpunkten; `P7` als Abschluss.
 - **Explizite Blocker:** [P3-I03](./phase-3/issues/P3-I03-news-refresh-ingest.md) setzt voraus, dass [P3-I02](./phase-3/issues/P3-I02-articles-api-mapping.md) abgeschlossen ist (Mapping-Dokument und Parser-Fixtures).
 - **Bewusste Annahme:** Lokale und CI-Tests nutzen Mocks für SRG und Ollama, wo Specs „ohne Netzwerk“ fordern; echte Container-Integration bleibt manuell oder optional `integration`-Marker.

@@ -19,6 +19,7 @@ DEFAULT_BRANCH = "master"
 TITLES: dict[str, str] = {
     "P1-I01": "Monorepo-Layout und Docker Compose",
     "P1-I02": "Flask App Factory und Health",
+    "P1-I03": "Formatierer, Prettier und GitHub Actions (Quality Gates)",
     "P2-I01": "app.db Schema und Migrationen",
     "P2-I02": "Wörterbuch REST API",
     "P2-I03": "Artikel lesen und FTS",
@@ -126,8 +127,8 @@ def gh_json(cmd: list[str]) -> dict | list:
 
 def main() -> int:
     specs = discover_specs()
-    if len(specs) != 24:
-        print(f"expected 24 specs, got {len(specs)}", file=sys.stderr)
+    if len(specs) != 25:
+        print(f"expected 25 specs, got {len(specs)}", file=sys.stderr)
 
     edges: dict[str, list[str]] = {}
     for iid, (_, path) in specs.items():

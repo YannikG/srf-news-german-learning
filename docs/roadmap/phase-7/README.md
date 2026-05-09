@@ -1,12 +1,12 @@
 # Phase 7: Qualität und Betrieb
 
-**Endzustand:** Ruff (und optional mypy) im Backend; pytest- und Vitest-Suites mit Edge Cases laufen in CI oder sind per Dokumentation ein Befehl; README beschreibt Start, Tests und Konfiguration.
+**Endzustand:** Ruff (und optional mypy) im Backend; pytest- und Vitest-Suites mit Edge Cases laufen in CI oder sind per Dokumentation ein Befehl; README beschreibt Start, Tests und Konfiguration. CI baut auf den Quality Gates aus **Phase 1** ([P1-I03](../phase-1/issues/P1-I03-quality-ci-formatters.md)) auf.
 
 ## DoD
 
 - [ ] `pytest` ohne Netzwerk-Marker grün (oder dokumentierte Marker-Strategie).
 - [ ] `pnpm test` / `npm test` für Vitest grün.
-- [ ] `ruff check` (und `ruff format --check` falls gewünscht) grün.
+- [ ] `ruff check` (und `ruff format --check` falls gewünscht) grün; Anschluss an die in Phase 1 eingeführten Workflows (PR und Push) dokumentiert.
 - [ ] README: Docker vom Root, venv, Umgebungsvariablen, wo `app.db` und `vectors.db` liegen.
 
 ## Issues
