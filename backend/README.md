@@ -72,14 +72,19 @@ flask --app wsgi init-db
 
 ## Tests
 
-Run from the `backend/` directory so pytest picks up `pyproject.toml` and the `app` package:
+**Phase-2 layers:** API integration tests use Flask's test client (`client` in `tests/conftest.py`) against a temporary SQLite database; schema and migration tests assert SQL and the migration runner; small unit tests target pure helpers (for example migration bookkeeping validation) without HTTP.
+
+**CI:** the same suite runs in GitHub Actions in [`.github/workflows/quality.yml`](../.github/workflows/quality.yml) under the job **Backend (pytest)** on pull requests and on pushes to `master` (Python 3.12, `pip install -r requirements.txt` and `-r requirements-dev.txt`, then `pytest` in `backend/`). No external services are required for the default test run.
+
+Run locally from the `backend/` directory so pytest picks up `pyproject.toml` and the `app` package:
 
 ```bash
 cd backend
+source .venv/bin/activate
 pytest
 ```
 
-The health test uses Flask's test client and does not require a running container.
+If the venv lives elsewhere, activate it first, then `cd backend` and run `pytest`. The health test uses Flask's test client and does not require a running container.
 
 ## Ruff (Lint und Format)
 

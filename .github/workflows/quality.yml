@@ -26,6 +26,28 @@ jobs:
       - name: Ruff format (check)
         run: ruff format --check app tests wsgi.py
 
+  backend-pytest:
+    name: Backend (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+      - name: pytest
+        run: pytest
+
   frontend-prettier:
     name: Frontend (Prettier)
     runs-on: ubuntu-latest
