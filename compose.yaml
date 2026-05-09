@@ -9,14 +9,14 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - app_db:/data/app.db
-      - vectors_db:/data/vectors.db
+      # Single directory mount: SQLite expects files under /data, not named volumes on file paths.
+      - app_data:/data
     depends_on:
       - ollama
       - sidecar
 
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.23.2
     ports:
       - "11434:11434"
     volumes:
@@ -28,6 +28,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  app_db:
-  vectors_db:
+  app_data:
   ollama_data:

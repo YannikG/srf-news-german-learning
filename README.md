@@ -13,7 +13,7 @@ docker compose up -d
 docker compose down
 ```
 
-Services: `web` (Backend-Image, Platzhalter bis P1-I02), `ollama`, `sidecar` (Stub). Persistente Volumes: `app_db` und `vectors_db` sind unter `/data/app.db` bzw. `/data/vectors.db` im `web`-Container eingehängt (Dateien können bis P1-I02 noch leer sein).
+Services: `web` (Backend-Image, Platzhalter bis P1-I02), `ollama`, `sidecar` (Stub). Persistentes benanntes Volume `app_data` ist unter `/data` im `web`-Container eingehängt; die Dateien `app.db` und `vectors.db` liegen dort und können bis P1-I02 noch leer sein.
 
 ## Roadmap
 
