@@ -14,6 +14,11 @@ EXPECTED_TABLES = frozenset(
         "_migrations",
         "article_words",
         "articles",
+        "articles_fts",
+        "articles_fts_config",
+        "articles_fts_data",
+        "articles_fts_docsize",
+        "articles_fts_idx",
         "settings",
         "srg_sync_metadata",
         "words",
@@ -35,6 +40,9 @@ EXPECTED_INDEXES = frozenset(
 
 EXPECTED_TRIGGERS = frozenset(
     {
+        "trg_articles_ad_fts",
+        "trg_articles_ai_fts",
+        "trg_articles_au_fts",
         "trg_articles_updated_at",
         "trg_srg_sync_metadata_updated_at",
         "trg_words_updated_at",
