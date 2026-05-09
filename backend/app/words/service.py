@@ -46,8 +46,6 @@ class WordsService:
 
     def patch_word(self, word_id: int, body: Any) -> dict[str, Any]:
         data = _require_object(body)
-        if self._repo.get(word_id) is None:
-            raise WordServiceError("Word not found", 404)
         updates: dict[str, Any] = {}
         if "german_label" in data:
             updates["german_label"] = _non_empty_str(data, "german_label")
@@ -60,7 +58,8 @@ class WordsService:
         if "cefr_level" in data:
             updates["cefr_level"] = _nullable_trimmed_str(data["cefr_level"])
         updated = self._repo.update(word_id, updates)
-        assert updated is not None
+        if updated is None:
+            raise WordServiceError("Word not found", 404)
         return updated
 
     def delete_word(self, word_id: int) -> None:
@@ -78,7 +77,7 @@ def _plain_str(data: dict[str, Any], field: str) -> str:
     val = data[field]
     if not isinstance(val, str):
         raise WordServiceError(f"{field} must be a string", 400)
-    return val
+    return val.strip()
 
 
 def _optional_str_field(data: dict[str, Any], field: str, *, default: str) -> str:

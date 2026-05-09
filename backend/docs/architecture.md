@@ -54,3 +54,5 @@ SQLAlchemy Core (Engine, text) → sqlite3 (DBAPI)
 ## Source language (Python)
 
 Comments and docstrings in `backend/app` and `backend/tests` are **English**; see [`.agents/AGENTS.md`](../../.agents/AGENTS.md) (section *Code-Sprache*). This document may stay German for contributors; the rule applies to executable source and tests.
+
+**Review note:** Feedback about raw ``sqlite3`` connections not being closed does not apply to the current words stack: persistence uses **SQLAlchemy** ``Engine`` / ``begin()``, which returns connections to the pool (or closes them for SQLite’s default pool) after each transaction.

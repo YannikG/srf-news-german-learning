@@ -78,13 +78,11 @@ class SqliteWordsRepository:
                 return dict(row) if row else None
             set_clause = ", ".join(f"{name} = :{name}" for name in subset)
             params: dict[str, Any] = {**subset, "word_id": word_id}
-            upd = text(f"UPDATE words SET {set_clause} WHERE id = :word_id")
-            result = conn.execute(upd, params)
-            if result.rowcount == 0:
-                return None
-            stmt = text(f"SELECT {_SELECT_COLUMNS} FROM words WHERE id = :id")
-            row = conn.execute(stmt, {"id": word_id}).mappings().one()
-            return dict(row)
+            upd = text(
+                f"UPDATE words SET {set_clause} WHERE id = :word_id RETURNING {_SELECT_COLUMNS}",
+            )
+            row = conn.execute(upd, params).mappings().first()
+            return dict(row) if row else None
 
     def delete(self, word_id: int) -> bool:
         with self._db.begin() as conn:
