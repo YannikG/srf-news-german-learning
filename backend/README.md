@@ -8,6 +8,7 @@ Flask backend for the SRF News German Learning app. Phase 1 ships the applicatio
 backend/
   app/
     __init__.py        # create_app() factory
+    db/                # SQLite: Migrationen, Runner, init_database()
     health.py          # /api/health blueprint
   tests/
     conftest.py        # Flask test client fixture
@@ -45,6 +46,21 @@ Smoke test:
 ```bash
 curl -fsS http://localhost:8000/api/health
 # {"ok":true}
+```
+
+## Datenbank (`app.db`)
+
+Schema und idempotente Initialisierung (Phase 2, P2-I01): Tabellen `articles`, `words`, `article_words`, `settings`, `srg_sync_metadata` plus Buchhaltung in `_migrations` (numerische `id`, `migration_id`, `applied_at`).
+
+- **Pfad:** fest `/data/app.db` (gleicher Mount wie in `compose.yaml` unter `/data` im `web`-Service). `pytest` setzt `DATABASE_PATH` auf eine temporäre Datei.
+- **Beim Start:** Existiert die Datei unter `DATABASE_PATH` noch nicht, legt `create_app()` sie inklusive Schema an. Existiert sie schon, bleibt sie unangetastet.
+- **Migrationen:** SQL-Dateien unter `app/db/sql/`, lexikographisch nach Dateiname (z. B. `001_initial.sql`, dann `002_….sql`). Pro erfolgreicher Datei eine Zeile in `_migrations` (`migration_id` entspricht dem Dateistamm ohne `.sql`). Neue Datei immer **anhängen**, bestehende Dateien nicht ändern.
+- **CLI:** `flask --app wsgi init-db` wendet alle ausstehenden Migrationen an (auch auf einer bestehenden Datei, z. B. nach einem Deploy).
+
+```bash
+cd backend
+source .venv/bin/activate   # wie oben
+flask --app wsgi init-db
 ```
 
 ## Tests
