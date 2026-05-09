@@ -12,15 +12,16 @@ from .service import WordServiceError, WordsService
 words_bp = Blueprint("words", __name__)
 
 
+@words_bp.errorhandler(WordServiceError)
+def _word_service_error(e: WordServiceError) -> tuple[Response, int]:
+    return jsonify(error=e.message), e.status_code
+
+
 def _svc() -> WordsService:
     path = current_app.config.get("DATABASE_PATH")
     if not path:
         raise RuntimeError("DATABASE_PATH is not set.")
     return WordsService(WordsRepository(path))
-
-
-def _json_error(message: str, code: int) -> tuple[Response, int]:
-    return jsonify(error=message), code
 
 
 @words_bp.get("/words")
@@ -32,37 +33,25 @@ def list_words() -> tuple[Response, int]:
 
 @words_bp.post("/words")
 def create_word() -> tuple[Response, int]:
-    try:
-        body: Any = request.get_json(silent=True)
-        row = _svc().create_word(body)
-        return jsonify(row), 201
-    except WordServiceError as e:
-        return _json_error(e.message, e.status_code)
+    body: Any = request.get_json(silent=True)
+    row = _svc().create_word(body)
+    return jsonify(row), 201
 
 
 @words_bp.get("/words/<int:word_id>")
 def get_word(word_id: int) -> tuple[Response, int]:
-    try:
-        row = _svc().get_word(word_id)
-        return jsonify(row), 200
-    except WordServiceError as e:
-        return _json_error(e.message, e.status_code)
+    row = _svc().get_word(word_id)
+    return jsonify(row), 200
 
 
 @words_bp.patch("/words/<int:word_id>")
 def patch_word(word_id: int) -> tuple[Response, int]:
-    try:
-        body: Any = request.get_json(silent=True)
-        row = _svc().patch_word(word_id, body)
-        return jsonify(row), 200
-    except WordServiceError as e:
-        return _json_error(e.message, e.status_code)
+    body: Any = request.get_json(silent=True)
+    row = _svc().patch_word(word_id, body)
+    return jsonify(row), 200
 
 
 @words_bp.delete("/words/<int:word_id>")
-def delete_word(word_id: int) -> tuple[Response, int] | tuple[str, int]:
-    try:
-        _svc().delete_word(word_id)
-        return "", 204
-    except WordServiceError as e:
-        return _json_error(e.message, e.status_code)
+def delete_word(word_id: int) -> tuple[str, int]:
+    _svc().delete_word(word_id)
+    return "", 204

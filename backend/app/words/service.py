@@ -35,7 +35,7 @@ class WordsService:
         category = _optional_str_field(data, "category", default="")
         translation = _optional_str_field(data, "translation", default="")
         difficulty = _parse_difficulty(data.get("difficulty", "Neu"))
-        cefr_level = _parse_cefr_optional(data.get("cefr_level"))
+        cefr_level = _nullable_trimmed_str(data.get("cefr_level"))
         return self._repo.create(
             german_label=german_label,
             category=category,
@@ -58,7 +58,7 @@ class WordsService:
         if "difficulty" in data:
             updates["difficulty"] = _parse_difficulty(data["difficulty"])
         if "cefr_level" in data:
-            updates["cefr_level"] = _parse_cefr_patch_value(data["cefr_level"])
+            updates["cefr_level"] = _nullable_trimmed_str(data["cefr_level"])
         updated = self._repo.update(word_id, updates)
         assert updated is not None
         return updated
@@ -110,16 +110,8 @@ def _parse_difficulty(raw: Any) -> str:
     return raw
 
 
-def _parse_cefr_optional(raw: Any) -> str | None:
-    if raw is None:
-        return None
-    if not isinstance(raw, str):
-        raise WordServiceError("cefr_level must be a string or null", 400)
-    s = raw.strip()
-    return s or None
-
-
-def _parse_cefr_patch_value(raw: Any) -> str | None:
+def _nullable_trimmed_str(raw: Any) -> str | None:
+    """JSON ``null`` oder fehlender Wert → ``None``; Leerstring nach Trim → ``None``."""
     if raw is None:
         return None
     if not isinstance(raw, str):

@@ -1,8 +1,8 @@
 """Flask application factory.
 
-Phase 1 wires the health route; Phase 2 adds SQLite app.db initialization.
-The factory accepts an optional config mapping so tests (and later environments)
-can inject overrides without mutating an already-built app.
+Registriert Health- und Wörterbuch-API, initialisiert ``app.db`` beim ersten Start,
+wenn die Datei unter ``DATABASE_PATH`` noch fehlt. Optionales ``test_config``-Mapping
+für Tests und Umgebungen ohne nachträgliche Mutation einer gebauten App.
 """
 
 from __future__ import annotations
