@@ -16,6 +16,7 @@ backend/
     articles/          # Artikel-API: routes, service, repository, ports, factory
     words/             # Wörterbuch-API: routes, service, repository, ports, factory
     settings/          # Einstellungen-API: routes, service, repository, ports, factory
+    srg_oauth/         # SRG SSR OAuth2 Client Credentials (Token-Endpoint, Cache)
   docs/
     architecture.md    # Schichtenmodell und Wiring
   tests/
@@ -55,6 +56,23 @@ Smoke test:
 curl -fsS http://localhost:8000/api/health
 # {"ok":true}
 ```
+
+## SRG SSR OAuth (Client Credentials, Phase 3)
+
+Der Token-Client in `app/srg_oauth/` spricht ausschliesslich den SRG-Endpoint **`https://api.srgssr.ch/oauth/v1/accesstoken`** an (OAuth2 `grant_type=client_credentials`, HTTP Basic mit Consumer Key und Secret). Die URL ist im Code festgelegt und absichtlich nicht über eine eigene Umgebungsvariable überschreibbar.
+
+**Konfiguration (Umgebungsvariablen):**
+
+| Variable | Bedeutung |
+|----------|-----------|
+| `SRGSSR_CONSUMER_KEY` | Consumer Key für Basic Auth |
+| `SRGSSR_CONSUMER_SECRET` | Consumer Secret für Basic Auth |
+
+Beide müssen gesetzt sein, sobald Code einen Client über `SrgSsrOAuthSettings()` oder `build_srg_oauth_client()` ohne explizites Settings-Objekt baut (sonst Validierungsfehler von pydantic-settings beim Start des Aufrufs).
+
+**Programm-API:** `from app.srg_oauth import SrgOAuthClient`, `SrgSsrOAuthSettings`, `build_srg_oauth_client`; Zugriffstoken über `get_access_token()`. User-Agent auf Token-Requests: Projektname `srf-news-german-learning`. Token wird im Speicher gecacht und etwa 60 Sekunden vor Ablauf der vom Server gemeldeten Gültigkeit erneuert.
+
+Für Compose oder lokale Shell: Variablen in `.env` bzw. in der Service-Umgebung setzen (keine Secrets ins Git).
 
 ## Datenbank (`app.db`)
 
