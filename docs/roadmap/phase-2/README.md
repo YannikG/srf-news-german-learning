@@ -8,6 +8,7 @@
 - [ ] Wörterbuch-CRUD per API mit Tests; Artikel-List/Detail aus DB mit Paginierung/Filter wie in der Spec.
 - [ ] FTS5 für Titelsuche funktioniert mit mindestens einem pytest-Fall.
 - [ ] Einstellungen (z. B. Übersetzungssprache) persistieren in `app.db`.
+- [ ] Backend-`pytest` läuft in CI auf Pull Requests und auf Push zum Default-Branch (siehe [P2-I05](./issues/P2-I05-backend-pytest-ci.md)).
 
 ## Issues
 
@@ -17,6 +18,7 @@
 | P2-I02 | Wörterbuch REST API | [issues/P2-I02-words-api.md](./issues/P2-I02-words-api.md) |
 | P2-I03 | Artikel lesen und FTS | [issues/P2-I03-articles-read-fts.md](./issues/P2-I03-articles-read-fts.md) |
 | P2-I04 | Einstellungen API | [issues/P2-I04-settings-api.md](./issues/P2-I04-settings-api.md) |
+| P2-I05 | Backend-pytest in CI und Teststrategie | [issues/P2-I05-backend-pytest-ci.md](./issues/P2-I05-backend-pytest-ci.md) |
 
 ## Issue-Graph
 
@@ -26,9 +28,11 @@ flowchart TB
   I02[P2-I02]
   I03[P2-I03]
   I04[P2-I04]
+  I05[P2-I05]
   I01 --> I02
   I01 --> I03
   I01 --> I04
+  I01 --> I05
 ```
 
 Abhängigkeit: Phase 1 abgeschlossen.
