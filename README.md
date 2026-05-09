@@ -13,7 +13,16 @@ docker compose up -d
 docker compose down
 ```
 
-Services: `web` (Backend-Image, Platzhalter bis P1-I02), `ollama`, `sidecar` (Stub). Persistentes benanntes Volume `app_data` ist unter `/data` im `web`-Container eingehängt; die Dateien `app.db` und `vectors.db` liegen dort und können bis P1-I02 noch leer sein.
+Services: `web` (Flask Backend, siehe [`backend/README.md`](backend/README.md)), `ollama`, `sidecar` (Stub). Persistentes benanntes Volume `app_data` ist unter `/data` im `web`-Container eingehängt; spätere Phasen legen dort `app.db` und `vectors.db` ab.
+
+Health-Smoketest gegen den laufenden Stack:
+
+```bash
+curl -fsS http://localhost:8000/api/health
+# {"ok":true}
+```
+
+Lokales Backend-Setup (venv, `requirements.txt`, Tests) ist in [`backend/README.md`](backend/README.md) dokumentiert.
 
 ## Roadmap
 
