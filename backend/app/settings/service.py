@@ -64,8 +64,9 @@ def _parse_cefr(raw: Any) -> str:
         raise SettingsServiceError("default_cefr must be a string", 400)
     val = raw.strip()
     if val not in ALLOWED_CEFR:
+        allowed = ", ".join(sorted(ALLOWED_CEFR))
         raise SettingsServiceError(
-            "default_cefr must be one of: A1, A2, B1, B2, C1, C2",
+            f"default_cefr must be one of: {allowed}",
             400,
         )
     return val
@@ -76,7 +77,11 @@ def _parse_translation_language(raw: Any) -> str:
         raise SettingsServiceError("translation_language must be a string", 400)
     val = raw.strip()
     if val not in ALLOWED_TRANSLATION_LANGUAGES:
-        raise SettingsServiceError("translation_language must be one of: en, uk", 400)
+        allowed = ", ".join(sorted(ALLOWED_TRANSLATION_LANGUAGES))
+        raise SettingsServiceError(
+            f"translation_language must be one of: {allowed}",
+            400,
+        )
     return val
 
 
