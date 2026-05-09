@@ -59,6 +59,11 @@ def test_strip_markdown_images_unclosed_image_keeps_literal_suffix() -> None:
     assert strip_markdown_images(text) == text
 
 
+def test_strip_markdown_images_no_paren_pair_keeps_literal() -> None:
+    text = "prefix ![alt without closing marker suffix"
+    assert strip_markdown_images(text) == text
+
+
 def test_model_validate_accepts_python_dict() -> None:
     data = json.loads(_FIXTURE.read_text(encoding="utf-8"))
     page = ArticleListPage.model_validate(data)

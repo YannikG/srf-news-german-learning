@@ -24,14 +24,12 @@ def _strip_inline_markdown_images(text: str) -> str:
         out.append(text[i:start])
         mid = text.find("](", start + 2)
         if mid == -1:
-            out.append(text[start])
-            i = start + 1
-            continue
+            out.append(text[start:])
+            break
         open_paren = mid + 1
         if open_paren >= n or text[open_paren] != "(":
-            out.append(text[start])
-            i = start + 1
-            continue
+            out.append(text[start:])
+            break
         depth = 1
         k = open_paren + 1
         while k < n and depth > 0:
