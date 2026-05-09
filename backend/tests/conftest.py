@@ -11,9 +11,7 @@ from app import create_app
 
 @pytest.fixture()
 def app() -> Flask:
-    flask_app = create_app()
-    flask_app.config.update(TESTING=True)
-    return flask_app
+    return create_app({"TESTING": True})
 
 
 @pytest.fixture()

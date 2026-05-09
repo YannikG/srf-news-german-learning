@@ -1,13 +1,15 @@
 """Health endpoint blueprint.
 
-Exposes ``GET /api/health`` for smoke tests and container health checks.
+Mounted by ``create_app`` under the ``/api`` prefix, so the route surface is
+``GET /api/health``. The blueprint itself stays prefix-agnostic so the factory
+controls routing layout.
 """
 
 from __future__ import annotations
 
 from flask import Blueprint, Response, jsonify
 
-health_bp = Blueprint("health", __name__, url_prefix="/api")
+health_bp = Blueprint("health", __name__)
 
 
 @health_bp.get("/health")
