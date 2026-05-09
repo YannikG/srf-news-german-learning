@@ -62,12 +62,15 @@ def map_article_to_app_db_fields(
     """
     Map one API article to columns of ``articles`` (types as stored in SQLite).
 
-    ``title`` and ``markdown_original`` are always non-empty strings (DB NOT NULL).
+    ``title`` and ``markdown_original`` are always non-empty strings (DB NOT NULL). Falls
+    weder Titelzeile noch ``article.id`` Text liefern, wird ``Ohne Titel`` gesetzt.
     """
     title = pick_localized_text(article.title, preferred_languages=preferred_languages)
     lead = pick_localized_text(article.lead, preferred_languages=preferred_languages)
     body = flatten_article_body(article.content)
     display_title = title if title else article.id
+    if not display_title:
+        display_title = "Ohne Titel"
     markdown_original = build_markdown_original(title=display_title, lead=lead, body=body)
     lead_out = lead if lead else None
     return {

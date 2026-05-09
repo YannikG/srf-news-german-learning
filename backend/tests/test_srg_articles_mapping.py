@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from app.srg_articles import ArticleListPage, map_article_to_app_db_fields, strip_markdown_images
+from app.srg_articles.models import AccessCondition, ArticleRecord, SrgIdentifier
 
 _FIXTURE = Path(__file__).resolve().parent / "fixtures" / "srg_article_page.json"
 
@@ -49,3 +50,19 @@ def test_model_validate_accepts_python_dict() -> None:
     data = json.loads(_FIXTURE.read_text(encoding="utf-8"))
     page = ArticleListPage.model_validate(data)
     assert len(page.results) == 1
+
+
+def test_map_article_fallback_title_when_id_and_texts_empty() -> None:
+    art = ArticleRecord(
+        id="",
+        publisher="SRF",
+        provenance="CMS_SRF",
+        accessConditions=[AccessCondition(name="Free")],
+        identifiers=[SrgIdentifier(value="", type="PdpId")],
+        title=None,
+        lead=None,
+        content=None,
+    )
+    row = map_article_to_app_db_fields(art)
+    assert row["title"] == "Ohne Titel"
+    assert row["markdown_original"].startswith("# Ohne Titel")
