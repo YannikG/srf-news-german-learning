@@ -16,7 +16,7 @@ backend/
     articles/          # Artikel-API: routes, service, repository, ports, factory
     words/             # Wörterbuch-API: routes, service, repository, ports, factory
     settings/          # Einstellungen-API: routes, service, repository, ports, factory
-    srg_oauth/         # SRG SSR OAuth2 Client Credentials (Token-Endpoint, Cache)
+    srg_oauth/         # SRG SSR OAuth2 Client Credentials (defaults, settings, client)
   docs/
     architecture.md    # Schichtenmodell und Wiring
   tests/
@@ -59,18 +59,20 @@ curl -fsS http://localhost:8000/api/health
 
 ## SRG SSR OAuth (Client Credentials, Phase 3)
 
-Der Token-Client in `app/srg_oauth/` spricht ausschliesslich den SRG-Endpoint **`https://api.srgssr.ch/oauth/v1/accesstoken`** an (OAuth2 `grant_type=client_credentials`, HTTP Basic mit Consumer Key und Secret). Die URL ist im Code festgelegt und absichtlich nicht über eine eigene Umgebungsvariable überschreibbar.
+Der Token-Client in `app/srg_oauth/` ruft per Default den SRG-Endpoint **`https://api.srgssr.ch/oauth/v1/accesstoken`** auf (OAuth2 `grant_type=client_credentials`, HTTP Basic mit Consumer Key und Secret). Token-URL und User-Agent sind über Umgebungsvariablen oder Konstruktor-Argumente überschreibbar (siehe Tabelle); sinnvoll z. B. für Tests mit einem Mock-Server.
 
 **Konfiguration (Umgebungsvariablen):**
 
 | Variable | Bedeutung |
 |----------|-----------|
-| `SRGSSR_CONSUMER_KEY` | Consumer Key für Basic Auth |
-| `SRGSSR_CONSUMER_SECRET` | Consumer Secret für Basic Auth |
+| `SRGSSR_CONSUMER_KEY` | Consumer Key für Basic Auth (Pflicht, wenn Settings aus der Umgebung gebaut werden) |
+| `SRGSSR_CONSUMER_SECRET` | Consumer Secret für Basic Auth (ebenfalls Pflicht in dem Fall) |
+| `SRGSSR_TOKEN_URL` | Token-Endpoint-URL; Standard: `https://api.srgssr.ch/oauth/v1/accesstoken` |
+| `SRGSSR_USER_AGENT` | User-Agent-Header auf Token-POSTs; Standard: `srf-news-german-learning` |
 
-Beide müssen gesetzt sein, sobald Code einen Client über `SrgSsrOAuthSettings()` oder `build_srg_oauth_client()` ohne explizites Settings-Objekt baut (sonst Validierungsfehler von pydantic-settings beim Start des Aufrufs).
+`SRGSSR_CONSUMER_KEY` und `SRGSSR_CONSUMER_SECRET` müssen gesetzt sein, sobald Code einen Client über `SrgSsrOAuthSettings()` oder `build_srg_oauth_client()` ohne explizites Settings-Objekt baut (sonst Validierungsfehler von pydantic-settings beim Start des Aufrufs). Direkt instanziiert man `SrgOAuthClient` mit `token_url=` / `user_agent=` und umgeht damit die Settings-Schicht.
 
-**Programm-API:** `from app.srg_oauth import SrgOAuthClient`, `SrgSsrOAuthSettings`, `build_srg_oauth_client`; Zugriffstoken über `get_access_token()`. User-Agent auf Token-Requests: Projektname `srf-news-german-learning`. Token wird im Speicher gecacht und etwa 60 Sekunden vor Ablauf der vom Server gemeldeten Gültigkeit erneuert. Bei HTTP-Fehlern wirft `SrgOAuthHttpError` den Response-Text zusätzlich in `body`; Verbindungs- und Timeoutfehler von httpx erscheinen als `SrgOAuthClientError` mit verketteter Ursache (`__cause__`).
+**Programm-API:** `from app.srg_oauth import SrgOAuthClient`, `SrgSsrOAuthSettings`, `build_srg_oauth_client`; Zugriffstoken über `get_access_token()`. Token wird im Speicher gecacht und etwa 60 Sekunden vor Ablauf der vom Server gemeldeten Gültigkeit erneuert. Bei HTTP-Fehlern wirft `SrgOAuthHttpError` den Response-Text zusätzlich in `body`; Verbindungs- und Timeoutfehler von httpx erscheinen als `SrgOAuthClientError` mit verketteter Ursache (`__cause__`).
 
 Für Compose oder lokale Shell: Variablen in `.env` bzw. in der Service-Umgebung setzen (keine Secrets ins Git).
 

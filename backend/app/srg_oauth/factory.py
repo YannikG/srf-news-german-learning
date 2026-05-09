@@ -20,6 +20,8 @@ def build_srg_oauth_client(
     return SrgOAuthClient(
         resolved.consumer_key,
         resolved.consumer_secret,
+        token_url=resolved.token_url,
+        user_agent=resolved.user_agent,
         http_client=http_client,
         refresh_skew_seconds=refresh_skew_seconds,
         request_timeout_seconds=request_timeout_seconds,

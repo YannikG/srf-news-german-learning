@@ -8,8 +8,10 @@ from collections.abc import Callable
 
 import httpx
 
-TOKEN_URL = "https://api.srgssr.ch/oauth/v1/accesstoken"
-USER_AGENT = "srf-news-german-learning"
+from .defaults import DEFAULT_TOKEN_URL, DEFAULT_USER_AGENT
+
+TOKEN_URL = DEFAULT_TOKEN_URL
+USER_AGENT = DEFAULT_USER_AGENT
 _DEFAULT_EXPIRES_IN = 3600
 
 
@@ -38,6 +40,8 @@ class SrgOAuthClient:
         consumer_key: str,
         consumer_secret: str,
         *,
+        token_url: str = DEFAULT_TOKEN_URL,
+        user_agent: str = DEFAULT_USER_AGENT,
         http_client: httpx.Client | None = None,
         refresh_skew_seconds: int = 60,
         request_timeout_seconds: float = 30.0,
@@ -45,6 +49,8 @@ class SrgOAuthClient:
     ) -> None:
         self._consumer_key = consumer_key
         self._consumer_secret = consumer_secret
+        self._token_url = token_url
+        self._user_agent = user_agent
         self._refresh_skew = refresh_skew_seconds
         self._mono: Callable[[], float] = monotonic if monotonic is not None else time.monotonic
         self._own_client = http_client is None
@@ -96,12 +102,12 @@ class SrgOAuthClient:
     def _do_token_request(self) -> tuple[str, float]:
         try:
             response = self._client.post(
-                TOKEN_URL,
+                self._token_url,
                 auth=(self._consumer_key, self._consumer_secret),
                 data={"grant_type": "client_credentials"},
                 headers={
                     "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": USER_AGENT,
+                    "User-Agent": self._user_agent,
                 },
             )
         except httpx.RequestError as exc:

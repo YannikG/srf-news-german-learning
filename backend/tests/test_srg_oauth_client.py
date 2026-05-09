@@ -170,3 +170,36 @@ def test_build_srg_oauth_client_uses_env(monkeypatch: pytest.MonkeyPatch) -> Non
         assert oauth.get_access_token() == "t"
     finally:
         client.close()
+
+
+def test_settings_token_url_and_user_agent_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SRGSSR_CONSUMER_KEY", "k")
+    monkeypatch.setenv("SRGSSR_CONSUMER_SECRET", "s")
+    monkeypatch.setenv("SRGSSR_TOKEN_URL", "https://example.test/oauth/token")
+    monkeypatch.setenv("SRGSSR_USER_AGENT", "custom-agent/1")
+    s = SrgSsrOAuthSettings()
+    assert s.token_url == "https://example.test/oauth/token"
+    assert s.user_agent == "custom-agent/1"
+
+
+def test_client_custom_token_url_and_user_agent() -> None:
+    custom_url = "https://example.test/oauth/token"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert str(request.url) == custom_url
+        assert request.headers.get("user-agent") == "my-ua/2"
+        return httpx.Response(200, json={"access_token": "x", "expires_in": 60})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    try:
+        oauth = SrgOAuthClient(
+            "k",
+            "s",
+            token_url=custom_url,
+            user_agent="my-ua/2",
+            http_client=client,
+            refresh_skew_seconds=0,
+        )
+        assert oauth.get_access_token() == "x"
+    finally:
+        client.close()
