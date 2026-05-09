@@ -78,7 +78,7 @@ flask --app wsgi init-db
 
 **CI:** the same suite runs in GitHub Actions in [`.github/workflows/quality.yml`](../.github/workflows/quality.yml) under the job **Backend (pytest)** on pull requests and on pushes to `master` (Python 3.12, `pip install -r requirements.txt` and `-r requirements-dev.txt`, then `pytest` in `backend/`). No external services are required for the default test run.
 
-Run locally from the `backend/` directory so pytest picks up `pyproject.toml` and the `app` package:
+Run locally from the **repository root** (parent of `backend/`) so `cd backend` is correct; then `pytest` picks up `pyproject.toml` and the `app` package.
 
 ```bash
 cd backend
@@ -86,7 +86,11 @@ source .venv/bin/activate   # Unix: venv created as backend/.venv from repo root
 pytest
 ```
 
-On Windows PowerShell, from `backend/`: `.venv\Scripts\Activate.ps1` when the venv was created as `backend/.venv` (or your venv path), then `pytest`. If the venv lives elsewhere, activate it first, then `cd backend` and run `pytest`. Install dependencies once per [Local setup](#local-setup-relative-to-repo-root). The health test uses Flask's test client and does not require a running container.
+On Windows PowerShell, from the repository root: `cd backend`, then `.venv\Scripts\Activate.ps1` if the venv was created as `backend/.venv` (or activate your own venv path), then run `pytest`.
+
+If the virtual environment lives elsewhere, activate it first, then `cd backend` from the repository root and run `pytest`. Install dependencies once per [Local setup](#local-setup-relative-to-repo-root).
+
+The health test uses Flask's test client and does not require a running container.
 
 ## Ruff (Lint und Format)
 
