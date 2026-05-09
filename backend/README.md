@@ -15,7 +15,7 @@ backend/
   wsgi.py              # gunicorn entry: `gunicorn wsgi:app`
   requirements.txt
   requirements-dev.txt
-  pyproject.toml       # pytest configuration
+  pyproject.toml       # pytest + Ruff-Konfiguration
   Dockerfile
   .dockerignore
 ```
@@ -57,6 +57,18 @@ pytest
 ```
 
 The health test uses Flask's test client and does not require a running container.
+
+## Ruff (Lint und Format)
+
+Nach `pip install -r requirements-dev.txt` (enthält eine fixierte Ruff-Version):
+
+```bash
+cd backend
+ruff check app tests wsgi.py
+ruff format --check app tests wsgi.py
+```
+
+Zum Anwenden der Formatter-Ausgabe: `ruff format app tests wsgi.py`. Details und Prettier-Hooks stehen im Root-[`README.md`](../README.md) im Abschnitt „Linting und Formatierung“.
 
 ## Docker
 

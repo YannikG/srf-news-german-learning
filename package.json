@@ -1,0 +1,24 @@
+{
+  "name": "srf-news-german-learning",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "format": "prettier --write frontend",
+    "format:check": "prettier --check frontend"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.5.3"
+  },
+  "lint-staged": {
+    "backend/{app,tests}/**/*.py": [
+      "ruff check --fix --force-exclude",
+      "ruff format --force-exclude"
+    ],
+    "backend/wsgi.py": ["ruff check --fix --force-exclude", "ruff format --force-exclude"],
+    "frontend/**/*.{ts,tsx,js,jsx,mjs,cjs,vue,json,yml,yaml,md,css}": [
+      "prettier --write"
+    ]
+  }
+}
