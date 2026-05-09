@@ -13,7 +13,7 @@ docker compose up -d
 docker compose down
 ```
 
-Services: `web` (Backend-Image, Platzhalter bis P1-I02), `ollama`, `sidecar` (Stub). Persistente Volumes: `app_db` und `vectors_db` sind unter `/data/app.db` bzw. `/data/vectors.db` im `web`-Container eingehängt (Dateien können bis P1-I02 noch leer sein). Beim ersten Start zieht Docker das offizielle `ollama/ollama`-Image, das mehrere Gigabyte umfassen kann; Modell-Downloads bleiben ausserhalb dieser Issue optional.
+Services: `web` (Backend-Image, Platzhalter bis P1-I02), `ollama`, `sidecar` (Stub). Persistente Volumes: `app_db` und `vectors_db` sind unter `/data/app.db` bzw. `/data/vectors.db` im `web`-Container eingehängt (Dateien können bis P1-I02 noch leer sein).
 
 ## Roadmap
 
