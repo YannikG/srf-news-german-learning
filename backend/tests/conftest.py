@@ -2,22 +2,30 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
+
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient
 
 from app import create_app
+from app.persistence import SQL_DATABASE_EXTENSION_KEY
+from app.persistence.sqlite_db import SqlDatabase
 
 
 @pytest.fixture()
-def app(tmp_path_factory: pytest.TempPathFactory) -> Flask:
+def app(tmp_path_factory: pytest.TempPathFactory) -> Generator[Flask, None, None]:
     db_path = tmp_path_factory.mktemp("db") / "app.db"
-    return create_app(
+    application = create_app(
         {
             "TESTING": True,
             "DATABASE_PATH": str(db_path),
         },
     )
+    yield application
+    ext = application.extensions.get(SQL_DATABASE_EXTENSION_KEY)
+    if isinstance(ext, SqlDatabase):
+        ext.dispose()
 
 
 @pytest.fixture()

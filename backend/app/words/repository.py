@@ -14,7 +14,7 @@ _SELECT_COLUMNS = (
 
 
 class SqliteWordsRepository:
-    """CRUD for ``words`` using ``SqlDatabase.engine`` (one transaction per operation)."""
+    """CRUD for ``words`` using ``SqlDatabase.begin()`` (one transaction per operation)."""
 
     def __init__(self, db: SqlDatabase) -> None:
         self._db = db

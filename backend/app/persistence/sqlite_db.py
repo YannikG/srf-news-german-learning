@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
@@ -11,6 +12,17 @@ from sqlalchemy.engine import URL, Connection, Engine
 
 # Key in ``Flask.extensions``; documented in ``backend/docs/architecture.md``.
 SQL_DATABASE_EXTENSION_KEY = "sql_database"
+
+
+def _apply_sqlite_foreign_keys_pragma(dbapi_connection: sqlite3.Connection) -> None:
+    """Run once per new DBAPI connection (SQLite only)."""
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
+
+def _on_sqlite_engine_connect(dbapi_connection: sqlite3.Connection, _record: object) -> None:
+    _apply_sqlite_foreign_keys_pragma(dbapi_connection)
 
 
 class SqlDatabase:
@@ -28,15 +40,7 @@ class SqlDatabase:
             url,
             connect_args={"check_same_thread": False},
         )
-
-        @event.listens_for(self._engine, "connect")
-        def _enable_foreign_keys(
-            dbapi_connection: object,
-            _connection_record: object,
-        ) -> None:
-            cursor = dbapi_connection.cursor()
-            cursor.execute("PRAGMA foreign_keys=ON")
-            cursor.close()
+        event.listen(self._engine, "connect", _on_sqlite_engine_connect)
 
     @property
     def path(self) -> Path:
