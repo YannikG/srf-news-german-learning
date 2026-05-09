@@ -46,7 +46,7 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
       - name: pytest
-        run: pytest
+        run: python -m pytest
 
   frontend-prettier:
     name: Frontend (Prettier)

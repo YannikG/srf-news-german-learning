@@ -13,12 +13,14 @@ backend/
     db/                # SQLite: Migrationen, Runner, init_database()
     persistence/       # SqlDatabase (SQLAlchemy Core engine for SQLite)
     health.py          # /api/health blueprint
-    words/             # dictionary API: routes, service, repository, ports, factory
+    articles/          # Artikel-API: routes, service, repository, ports, factory
+    words/             # Wörterbuch-API: routes, service, repository, ports, factory
+    settings/          # Einstellungen-API: routes, service, repository, ports, factory
   docs/
     architecture.md    # Schichtenmodell und Wiring
   tests/
     conftest.py        # Flask test client fixture
-    test_health.py
+    test_*_api.py      # API-Integration; test_db_schema, test_migration_runner, test_health
   wsgi.py              # gunicorn entry: `gunicorn wsgi:app`
   requirements.txt
   requirements-dev.txt
@@ -80,11 +82,11 @@ Run locally from the `backend/` directory so pytest picks up `pyproject.toml` an
 
 ```bash
 cd backend
-source .venv/bin/activate
+source .venv/bin/activate   # Unix: venv created as backend/.venv from repo root
 pytest
 ```
 
-If the venv lives elsewhere, activate it first, then `cd backend` and run `pytest`. The health test uses Flask's test client and does not require a running container.
+On Windows PowerShell, from `backend/`: `.venv\Scripts\Activate.ps1` when the venv was created as `backend/.venv` (or your venv path), then `pytest`. If the venv lives elsewhere, activate it first, then `cd backend` and run `pytest`. Install dependencies once per [Local setup](#local-setup-relative-to-repo-root). The health test uses Flask's test client and does not require a running container.
 
 ## Ruff (Lint und Format)
 
