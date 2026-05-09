@@ -1,0 +1,40 @@
+name: Quality
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  backend-ruff:
+    name: Backend (Ruff)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+      - name: Install Ruff
+        run: pip install "ruff==0.15.12"
+      - name: Ruff check
+        run: ruff check app tests wsgi.py
+      - name: Ruff format (check)
+        run: ruff format --check app tests wsgi.py
+
+  frontend-prettier:
+    name: Frontend (Prettier)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Prettier check
+        run: npm run format:check

@@ -15,7 +15,7 @@ backend/
   wsgi.py              # gunicorn entry: `gunicorn wsgi:app`
   requirements.txt
   requirements-dev.txt
-  pyproject.toml       # pytest configuration
+  pyproject.toml       # pytest + Ruff-Konfiguration
   Dockerfile
   .dockerignore
 ```
@@ -26,7 +26,7 @@ backend/
 python -m venv backend/.venv
 source backend/.venv/bin/activate
 pip install -r backend/requirements.txt          # runtime only
-pip install -r backend/requirements-dev.txt      # adds pytest
+pip install -r backend/requirements-dev.txt      # adds pytest and Ruff
 ```
 
 On Windows PowerShell use `backend\.venv\Scripts\Activate.ps1` instead of `source ...`.
@@ -57,6 +57,18 @@ pytest
 ```
 
 The health test uses Flask's test client and does not require a running container.
+
+## Ruff (Lint und Format)
+
+Nach `pip install -r requirements-dev.txt` (enthält eine fixierte Ruff-Version):
+
+```bash
+cd backend
+ruff check app tests wsgi.py
+ruff format --check app tests wsgi.py
+```
+
+Zum Anwenden der Formatter-Ausgabe: `ruff format app tests wsgi.py`. Der Pre-Commit-Hook ruft `ruff` direkt auf, mit **aktiviertem Backend-venv** (wie oben bei `pip install`). Details und Prettier stehen im Root-[`README.md`](../README.md) im Abschnitt „Linting und Formatierung“.
 
 ## Docker
 
