@@ -1,4 +1,4 @@
-"""Gemeinsame DB-Anbindung für Repositories (SQLite, Foreign Keys, Row-Fabrik)."""
+"""Shared SQLite access for repositories (foreign keys, row factory)."""
 
 from __future__ import annotations
 

@@ -50,3 +50,7 @@ sqlite3
 ```
 
 `app/db` (Migrationen) hängt nicht von `app/words` ab. `app/persistence` hängt nicht von Flask ab.
+
+## Source language (Python)
+
+Comments and docstrings in `backend/app` and `backend/tests` are **English**; see [`.agents/AGENTS.md`](../../.agents/AGENTS.md) (section *Code-Sprache*). This document may stay German for contributors; the rule applies to executable source and tests.

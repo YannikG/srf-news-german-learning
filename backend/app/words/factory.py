@@ -1,4 +1,4 @@
-"""Zusammenbau von Wörterbuch-Service und Repository (explizite Wiring-Stelle)."""
+"""Wires the dictionary service and its repository (single composition root for the feature)."""
 
 from __future__ import annotations
 
@@ -8,5 +8,5 @@ from .service import WordsService
 
 
 def build_words_service(db: SqlDatabase) -> WordsService:
-    """Liefert einen ``WordsService`` mit SQLite-Repository für die gegebene Datenbank."""
+    """Return a ``WordsService`` backed by a SQLite repository for the given database."""
     return WordsService(SqliteWordsRepository(db))

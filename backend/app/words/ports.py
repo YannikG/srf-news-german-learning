@@ -1,4 +1,4 @@
-"""Schnittstellen zwischen Service- und Datenschicht (ohne Framework)."""
+"""Contracts between the service layer and persistence (framework-free)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from typing import Any, Protocol
 
 
 class WordsRepositoryPort(Protocol):
-    """Persistenz für Wörter; Implementierung z. B. SQLite."""
+    """Word persistence; concrete implementation e.g. SQLite."""
 
     def list(self, *, category: str | None = None) -> list[dict[str, Any]]: ...
 

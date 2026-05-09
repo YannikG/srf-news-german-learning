@@ -1,4 +1,4 @@
-"""Dünne REST-Routen für ``/api/words``."""
+"""Thin REST handlers for ``/api/words``."""
 
 from __future__ import annotations
 

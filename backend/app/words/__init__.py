@@ -1,4 +1,4 @@
-"""Wörterbuch: REST, Service, Repository."""
+"""Dictionary feature: HTTP layer, service, repository."""
 
 from __future__ import annotations
 

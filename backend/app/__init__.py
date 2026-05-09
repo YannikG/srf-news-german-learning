@@ -1,8 +1,8 @@
 """Flask application factory.
 
-Registriert Health- und Wörterbuch-API, initialisiert ``app.db`` beim ersten Start,
-wenn die Datei unter ``DATABASE_PATH`` noch fehlt. Optionales ``test_config``-Mapping
-für Tests und Umgebungen ohne nachträgliche Mutation einer gebauten App.
+Registers health and dictionary blueprints, bootstraps ``app.db`` on first start when
+the file at ``DATABASE_PATH`` is missing, and accepts an optional ``test_config`` map
+so tests and environments can inject settings without mutating an already-built app.
 """
 
 from __future__ import annotations

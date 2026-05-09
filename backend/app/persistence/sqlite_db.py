@@ -1,4 +1,4 @@
-"""Konfigurierte SQLite-Verbindungen für das Repository-Pattern."""
+"""Configured SQLite connections for the repository layer."""
 
 from __future__ import annotations
 
@@ -7,15 +7,15 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-# Schlüssel in ``Flask.extensions``; identisch in Architektur-Doku.
+# Key in ``Flask.extensions``; documented in ``backend/docs/architecture.md``.
 SQL_DATABASE_EXTENSION_KEY = "sql_database"
 
 
 class SqlDatabase:
-    """Pfad-bewusster Zugang zu ``app.db``; Repositories nutzen kurze Transaktionen.
+    """Path-scoped access to ``app.db``; repositories use short per-operation transactions.
 
-    Der Contextmanager committet nach erfolgreichem ``yield``, rollt bei Exceptions zurück,
-    und schliesst die Connection (SQLite verwirft sonst uncommittete Schreibvorgänge).
+    The context manager commits after a successful ``yield``, rolls back on exceptions,
+    then closes the connection (SQLite drops uncommitted writes on close otherwise).
     """
 
     def __init__(self, path: str | Path) -> None:

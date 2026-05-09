@@ -1,4 +1,4 @@
-"""SQLite-Implementierung von ``WordsRepositoryPort``."""
+"""SQLite implementation of ``WordsRepositoryPort``."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
 
 
 class SqliteWordsRepository:
-    """CRUD für Tabelle ``words`` über ``SqlDatabase`` (eine Connection pro Operation)."""
+    """CRUD for the ``words`` table via ``SqlDatabase`` (one connection per operation)."""
 
     _SELECT = (
         "SELECT id, german_label, category, difficulty, translation, cefr_level, "

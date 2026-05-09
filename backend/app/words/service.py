@@ -1,4 +1,4 @@
-"""Validierung und Orchestrierung für Wörterbuch-Operationen."""
+"""Validation and orchestration for dictionary (word) operations."""
 
 from __future__ import annotations
 
@@ -111,7 +111,7 @@ def _parse_difficulty(raw: Any) -> str:
 
 
 def _nullable_trimmed_str(raw: Any) -> str | None:
-    """JSON ``null`` oder fehlender Wert → ``None``; Leerstring nach Trim → ``None``."""
+    """JSON ``null`` maps to ``None``; empty or whitespace-only strings trim to ``None``."""
     if raw is None:
         return None
     if not isinstance(raw, str):

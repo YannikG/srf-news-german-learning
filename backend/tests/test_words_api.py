@@ -1,4 +1,4 @@
-"""Integrationstests für die Wörterbuch-REST-API."""
+"""Integration tests for the dictionary REST API."""
 
 from __future__ import annotations
 
