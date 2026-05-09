@@ -26,7 +26,7 @@ backend/
 python -m venv backend/.venv
 source backend/.venv/bin/activate
 pip install -r backend/requirements.txt          # runtime only
-pip install -r backend/requirements-dev.txt      # adds pytest
+pip install -r backend/requirements-dev.txt      # adds pytest and Ruff
 ```
 
 On Windows PowerShell use `backend\.venv\Scripts\Activate.ps1` instead of `source ...`.
@@ -68,7 +68,7 @@ ruff check app tests wsgi.py
 ruff format --check app tests wsgi.py
 ```
 
-Zum Anwenden der Formatter-Ausgabe: `ruff format app tests wsgi.py`. Details und Prettier-Hooks stehen im Root-[`README.md`](../README.md) im Abschnitt „Linting und Formatierung“.
+Zum Anwenden der Formatter-Ausgabe: `ruff format app tests wsgi.py`. Der Pre-Commit-Hook ruft `ruff` direkt auf, mit **aktiviertem Backend-venv** (wie oben bei `pip install`). Details und Prettier stehen im Root-[`README.md`](../README.md) im Abschnitt „Linting und Formatierung“.
 
 ## Docker
 

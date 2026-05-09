@@ -28,13 +28,13 @@ Lokales Backend-Setup (venv, `requirements.txt`, Tests) ist in [`backend/README.
 
 Statische Checks laufen in GitHub Actions (Workflow [`.github/workflows/quality.yml`](.github/workflows/quality.yml)) bei jedem Pull Request und bei jedem Push auf `master`.
 
-**Python (Ruff), aus dem Ordner `backend/`:**
+**Python (Ruff):** Backend-venv wie im [`backend/README.md`](backend/README.md) anlegen und in der Shell aktivieren. Anschliessend:
 
 ```bash
 cd backend
-python3 -m pip install -r requirements-dev.txt
-python3 -m ruff check app tests wsgi.py
-python3 -m ruff format --check app tests wsgi.py
+pip install -r requirements-dev.txt
+ruff check app tests wsgi.py
+ruff format --check app tests wsgi.py
 ```
 
 **Prettier (Frontend-Ordner `frontend/`), im Repository-Root:**
@@ -46,7 +46,7 @@ npm run format:check
 npm run format
 ```
 
-**Git-Hooks (Husky, lint-staged):** einmalig nach dem Klonen im Root `npm install` ausführen. Das `prepare`-Skript richtet Husky ein. Beim Commit werden auf gestagten Dateien Ruff (nur Backend-Quellpfade) und Prettier (Frontend-Muster) ausgeführt. Ruff muss dafür verfügbar sein, typischerweise über dasselbe venv wie oben (`python3 -m pip install -r backend/requirements-dev.txt`, dann `ruff` im `PATH` oder vor dem Commit `cd backend && source .venv/bin/activate`).
+**Git-Hooks (Husky, lint-staged):** einmalig nach dem Klonen im Repository-Root `npm install` ausführen. Das `prepare`-Skript richtet Husky ein. Beim Commit prüft lint-staged gestagte Backend-Pythondateien mit Ruff und Frontend-Dateien mit Prettier (Schreibmodus). Dafür muss in der Shell, in der `git commit` läuft, dasselbe **aktivierte Backend-venv** gelten wie oben, damit `ruff` im `PATH` liegt.
 
 **Ausnahmen (nur bewusst):** `git commit --no-verify` oder einmalig `HUSKY=0 git commit ...`, wenn ein Hook blockiert und die Ursache bekannt ist.
 
