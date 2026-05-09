@@ -13,12 +13,12 @@
   },
   "lint-staged": {
     "backend/{app,tests}/**/*.py": [
-      "ruff check --fix --force-exclude",
-      "ruff format --force-exclude"
+      "backend/.venv/bin/python -m ruff check --fix --force-exclude",
+      "backend/.venv/bin/python -m ruff format --force-exclude"
     ],
     "backend/wsgi.py": [
-      "ruff check --fix --force-exclude",
-      "ruff format --force-exclude"
+      "backend/.venv/bin/python -m ruff check --fix --force-exclude",
+      "backend/.venv/bin/python -m ruff format --force-exclude"
     ],
     "frontend/**/*.{ts,tsx,js,jsx,mjs,cjs,vue,json,yml,yaml,md,css}": [
       "prettier --write"

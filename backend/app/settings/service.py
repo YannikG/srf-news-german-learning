@@ -83,7 +83,13 @@ def _parse_translation_language(raw: Any) -> str:
 def _parse_retrieval_top_k(raw: Any) -> int | None:
     if raw is None:
         return None
-    if isinstance(raw, bool) or not isinstance(raw, int):
+    if isinstance(raw, bool):
+        raise SettingsServiceError("retrieval_top_k must be an integer or null", 400)
+    if isinstance(raw, float):
+        if not raw.is_integer():
+            raise SettingsServiceError("retrieval_top_k must be a whole number", 400)
+        raw = int(raw)
+    if not isinstance(raw, int):
         raise SettingsServiceError("retrieval_top_k must be an integer or null", 400)
     if raw < 1:
         raise SettingsServiceError("retrieval_top_k must be at least 1", 400)

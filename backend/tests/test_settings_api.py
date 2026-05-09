@@ -91,6 +91,27 @@ def test_patch_clear_retrieval_top_k(client: FlaskClient) -> None:
     assert data["retrieval_top_k"] is None
 
 
+def test_patch_retrieval_top_k_rejects_fractional_float(client: FlaskClient) -> None:
+    res = client.patch(
+        "/api/settings",
+        data=json.dumps({"retrieval_top_k": 3.5}),
+        content_type="application/json",
+    )
+    assert res.status_code == 400
+
+
+def test_patch_retrieval_top_k_accepts_integral_float(client: FlaskClient) -> None:
+    res = client.patch(
+        "/api/settings",
+        data=json.dumps({"retrieval_top_k": 7.0}),
+        content_type="application/json",
+    )
+    assert res.status_code == 200
+    body = res.get_json()
+    assert body is not None
+    assert body["retrieval_top_k"] == 7
+
+
 def test_patch_non_object_body(client: FlaskClient) -> None:
     res = client.patch(
         "/api/settings",
