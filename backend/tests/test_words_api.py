@@ -1,4 +1,4 @@
-"""P2-I02: Wörterbuch REST API (CRUD, Validierung, Kategorie-Filter)."""
+"""Integrationstests für die Wörterbuch-REST-API."""
 
 from __future__ import annotations
 

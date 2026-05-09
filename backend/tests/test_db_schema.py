@@ -1,4 +1,4 @@
-"""P2-I01: app.db schema, indexes, and idempotent initialization."""
+"""Tests für app.db-Schema, Indizes und idempotente Migrationen."""
 
 from __future__ import annotations
 
