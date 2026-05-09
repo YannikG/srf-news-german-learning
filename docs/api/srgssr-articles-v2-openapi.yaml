@@ -1,0 +1,818 @@
+# Example OpenAPI YAML to get you started quickly.
+# Note: YAML has indentation based coping.
+# Code completion support is available so start typing for
+# available options.
+# This example follows the recommendations of the API 
+# Improvement Proposals for common API patterns. Find more
+# at https://google.aip.dev/
+
+# Find the full OpenAPI reference at:
+# https://github.com/OAI/OpenAPI-Specification
+openapi: 3.0.3
+
+# This is your document metadata.
+info:
+  version: 2.0.0
+  title: SRGSSR Articles
+  description: |
+    This API Provides articles of all SRGSSR Business Units - SRF, RTS, RSI, RTR and SWI.
+
+# Servers where this API is hosted
+servers: 
+  - url: https://api.srgssr.ch/srgssr-articles/v2
+security:
+  - auth: []
+# Describe your paths here
+paths:
+  # This is a endpoint path.
+  '/articles':
+    get:
+      tags:
+      - Articles
+      description: Returns the articles matching the provided filter criteria.
+      parameters:
+      - name: cursor
+        in: query
+        description: The cursor from the previous request. Omit to get the first page.
+          A cursor is only temporarily valid and cannot be used with different filter
+          criteria.
+        schema:
+          type: string
+          nullable: true
+      - name: limit
+        in: query
+        description: "The number of articles per page. Minimum: 1, maximum: 10."
+        schema:
+          format: int32
+          default: 10
+          maximum: 10
+          minimum: 1
+          type: integer
+      - name: publisher
+        in: query
+        description: Filters articles depending on their publisher.
+        schema:
+          allOf:
+          - $ref: "#/components/schemas/Publisher"
+          - nullable: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticlePage"
+        "401":
+          description: Not Authorized
+        "403":
+          description: Not Allowed
+
+# Reusable components of your API belong here. Utilize
+# components with JSON references.
+components:
+  # Schemas is a map of names to Schema objects
+  schemas:
+    AccessCondition:
+      description: The conditions under which content can be accessed.
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          description: The name of the AccessCondition.
+          type: string
+        description:
+          description: The description of the AccessCondition.
+          type: array
+          items:
+            $ref: "#/components/schemas/Text"
+          nullable: true
+        blockReason:
+          description: Indicates that the content is blocked and why. (e.g. for legal
+            reasons).
+          type: string
+          nullable: true
+        embeddingDisabled:
+          description: Indicates that the content cannot be embedded.
+          type: boolean
+          nullable: true
+        geoBlockingWhitelist:
+          description: Indicates that the content can only be viewed in the listed
+            locations.
+          type: array
+          items:
+            $ref: "#/components/schemas/GeoBlockingLocation"
+          nullable: true
+        availableFrom:
+          format: date-time
+          description: Indicates that the content can only be viewed after the given
+            date and time (ISO-8601).
+          type: string
+          example: 2022-03-10T16:15:50Z
+          nullable: true
+        availableTo:
+          format: date-time
+          description: Indicates that the content can only be viewed until the given
+            date and time (ISO-8601).
+          type: string
+          example: 2022-03-10T16:15:50Z
+          nullable: true
+  
+    Agent:
+      description: "An agent represents a person, team or department."
+      type: object
+      oneOf:
+      - $ref: "#/components/schemas/Person"
+      - $ref: "#/components/schemas/Department"
+      - $ref: "#/components/schemas/Team"
+      discriminator:
+        propertyName: type
+        mapping:
+          Person: "#/components/schemas/Person"
+          Department: "#/components/schemas/Department"
+          Team: "#/components/schemas/Team"
+          
+    ArticlePage:
+      required:
+      - results
+      type: object
+      properties:
+        cursor:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Article"
+    Article:
+      required:
+      - id
+      - publisher
+      - provenance
+      - accessConditions
+      - identifiers
+      type: object
+      properties:
+        id:
+          description: The PDP id of the article.
+          type: string
+        publisher:
+          description: The business unit or external organisation publishing the metadata.
+          type: string
+          allOf:
+          - $ref: "#/components/schemas/Publisher"
+        provenance:
+          description: The source system publishing the metadata.
+          type: string
+          allOf:
+          - $ref: "#/components/schemas/Provenance"
+        accessConditions:
+          description: The access conditions for this article.
+          type: array
+          items:
+            $ref: "#/components/schemas/AccessCondition"
+        title:
+          description: The title or headline. The title may be available in different
+            languages.
+          type: array
+          items:
+            $ref: "#/components/schemas/Text"
+          nullable: true
+        identifiers:
+          description: All known identifiers of this article.
+          type: array
+          items:
+            $ref: "#/components/schemas/Identifier"
+        contributors:
+          description: "People, teams or departments who contributed to the article."
+          type: array
+          items:
+            $ref: "#/components/schemas/Involvement"
+          nullable: true
+        genres:
+          description: The genres this article belongs to.
+          type: array
+          items:
+            $ref: "#/components/schemas/Genre"
+          nullable: true
+        content:
+          description: The full text of the article.
+          type: object
+          allOf:
+          - $ref: "#/components/schemas/ArticleContent"
+          nullable: true
+        lead:
+          description: "A lead is a self-contained, brief, and meaningful description\
+            \ of an article. The lead may be available in different languages."
+          type: array
+          items:
+            $ref: "#/components/schemas/Text"
+          nullable: true
+        modificationDate:
+          format: date-time
+          description: The date and time (expressed as timestamp) at which the article
+            was modified.
+          type: string
+          example: 2022-03-10T16:15:50Z
+          nullable: true
+        releaseDate:
+          format: date-time
+          description: The date and time (expressed as timestamp) at which the article
+            was released.
+          type: string
+          example: 2022-03-10T16:15:50Z
+          nullable: true
+        kicker:
+          description: "A line of newspaper type set above a title usually in a different\
+            \ typeface and intended to provoke interest in, editorialize about, or\
+            \ provide orientation for the matter in the copy heads. The kicker may\
+            \ be available in different languages."
+          type: array
+          items:
+            $ref: "#/components/schemas/Text"
+          nullable: true
+        resources:
+          description: Resources such as pictures or documents related to this article.
+          type: array
+          items:
+            $ref: "#/components/schemas/Resource"
+          nullable: true
+        keywords:
+          description: Keywords for this article.
+          type: array
+          items:
+            type: string
+          nullable: true
+        relatedArticles:
+          description: Other articles related to this article.
+          type: array
+          items:
+            type: string
+          nullable: true
+        existsAs:
+          description: PDP ids of other articles with the same content.
+          type: array
+          items:
+            type: string
+          nullable: true
+    
+    ArticleContent:
+      required:
+      - text
+      type: object
+      properties:
+        text:
+          description: "The complete, unformatted text of the article. The text should\
+            \ not contain any HTML tags or similar."
+          type: array
+          items:
+            type: string
+            
+    Department:
+      required:
+      - type
+      type: object
+      properties:
+        name:
+          type: string
+          writeOnly: true
+        type:
+          description: The type of the agent. Always 'Department'
+          type: string
+            
+    Document:
+      required:
+      - locator
+      - identifiers
+      - type
+      type: object
+      properties:
+        name:
+          description: The name of the document. This can be a filename or a title.
+          type: array
+          items:
+            $ref: "#/components/schemas/Text"
+          nullable: true
+        description:
+          description: The description of the document.
+          type: array
+          items:
+            $ref: "#/components/schemas/Text"
+          nullable: true
+        locator:
+          description: The permanent URL from where the document can be accessed.
+          type: object
+          allOf:
+          - $ref: "#/components/schemas/URI"
+        identifiers:
+          description: A list of identifiers that can be used to reference the document.
+          type: array
+          items:
+            $ref: "#/components/schemas/Identifier"
+        productionDate:
+          format: date-time
+          description: The date when the document was produced.
+          type: string
+          example: 2022-03-10T16:15:50Z
+          nullable: true
+        modificationDate:
+          format: date-time
+          description: The date when the document was last modified.
+          type: string
+          example: 2022-03-10T16:15:50Z
+          nullable: true
+        type:
+          description: The type of the resource. Always 'Document'
+          type: string
+          
+    Genre:
+      description: "The genre is used to classify audiovisual objects depending on\
+        \ their content into subject areas such as 'Culture', 'Sports', 'News' or\
+        \ 'Economy'."
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          description: The name of this genre.
+          type: object
+          allOf:
+          - $ref: "#/components/schemas/Text"
+        description:
+          description: The description of this genre.
+          type: object
+          allOf:
+          - $ref: "#/components/schemas/Text"
+          nullable: true
+        sourceId:
+          description: The id of this genre from the source system.
+          type: string
+          nullable: true
+    Identifier:
+      description: Identifier for an object. Includes the identifier value as well
+        as a type.
+      required:
+      - value
+      - type
+      type: object
+      properties:
+        value:
+          description: The value of this identifier.
+          type: string
+        type:
+          description: "The specific type of the identifier.\n  *  PdpId identifies\
+            \ an object in the PDP (e.g. 'urn:pdp:faro_srf:programme:85bef433-ef9a-4183-8d86-78e4e0f40781')\n\
+            \  *  SourceId identifies an object in the source system (see provenance)\n\
+            \  *  ANR identifies an object in the archive context (e.g. '2308936')\n\
+            \  *  ProductId identifies a product (e.g. 'NEWS20201116_TM_0100')\n \
+            \ *  ProductElementId identifies a product element (e.g. 'NEWS20201116_TM_0100_0001')\n\
+            \  *  VariantId identifies a product variant (e.g. 'AUDI20230623_RS_0015_APP_02')\n\
+            \  *  ConceptId identifies a campaign in the OfferPortfolio (e.g. 'A00104')\n\
+            \  *  ISAN is a unique ISO identifier for audiovisual content (see: https://www.isan.org)\n\
+            \  *  AisEpisodeId identifies an episode in the AIS\n  *  OpenMediaUrn\
+            \ identifies an episode or item in OpenMedia\n    "
+          type: string
+          allOf:
+          - $ref: "#/components/schemas/IdentifierType"
+    IdentifierType:
+      description: |
+        The identifier type defines the different types of possible identifiers.
+          *  PdpId identifies an object in the PDP (e.g. 'urn:pdp:faro_srf:programme:85bef433-ef9a-4183-8d86-78e4e0f40781')
+          *  SourceId identifies an object in the source system (see provenance)
+          *  ANR identifies an object in the archive context (e.g. '2308936')
+          *  ProductId identifies a product (e.g. 'NEWS20201116_TM_0100')
+          *  ProductElementId identifies a product element (e.g. 'NEWS20201116_TM_0100_0001')
+          *  VariantId identifies a product variant (e.g. 'AUDI20230623_RS_0015_APP_02')
+          *  ConceptId identifies a campaign in the OfferPortfolio (e.g. 'A00104')
+          *  ISAN is a unique ISO identifier for audiovisual content (see: https://www.isan.org)
+          *  AisEpisodeId identifies an episode in the AIS
+          *  OpenMediaUrn identifies an episode or item in OpenMedia
+      enum:
+      - PdpId
+      - SourceId
+      - ANR
+      - ProductId
+      - ProductElementId
+      - VariantId
+      - ConceptId
+      - ISAN
+      - AisEpisodeId
+      - OpenMediaUrn
+      type: string
+    Involvement:
+      description: An Agent's participation in the creation of publication of an editorial
+        object (e.g. Programme).
+      required:
+      - name
+      - agent
+      type: object
+      properties:
+        name:
+          description: The name of the involvement (e.g. author).
+          type: string
+        agent:
+          description: "The Person, Department, or Team involved."
+          type: object
+          allOf:
+          - $ref: "#/components/schemas/Agent"
+    Language:
+      enum:
+      - Unknown
+      - ab
+      - aa
+      - af
+      - ak
+      - sq
+      - am
+      - ar
+      - an
+      - hy
+      - as
+      - av
+      - ae
+      - ay
+      - az
+      - bm
+      - ba
+      - eu
+      - be
+      - bn
+      - bi
+      - bs
+      - br
+      - bg
+      - my
+      - ca
+      - ch
+      - ce
+      - ny
+      - zh
+      - cv
+      - kw
+      - co
+      - cr
+      - hr
+      - cs
+      - da
+      - dv
+      - nl
+      - dz
+      - en
+      - eo
+      - et
+      - ee
+      - fo
+      - fj
+      - fi
+      - fr
+      - ff
+      - gl
+      - ka
+      - de
+      - el
+      - gn
+      - gu
+      - ht
+      - ha
+      - he
+      - hz
+      - hi
+      - ho
+      - hu
+      - ia
+      - id
+      - ie
+      - ga
+      - ig
+      - ik
+      - io
+      - is
+      - it
+      - iu
+      - ja
+      - jv
+      - kl
+      - kn
+      - kr
+      - ks
+      - kk
+      - km
+      - ki
+      - rw
+      - ky
+      - kv
+      - kg
+      - ko
+      - ku
+      - kj
+      - la
+      - lb
+      - lg
+      - li
+      - ln
+      - lo
+      - lt
+      - lu
+      - lv
+      - gv
+      - mk
+      - mg
+      - ms
+      - ml
+      - mt
+      - mi
+      - mr
+      - mh
+      - mn
+      - na
+      - nv
+      - nd
+      - ne
+      - ng
+      - nb
+      - nn
+      - "no"
+      - ii
+      - nr
+      - oc
+      - oj
+      - cu
+      - om
+      - or
+      - os
+      - pa
+      - pi
+      - fa
+      - pl
+      - ps
+      - pt
+      - qu
+      - rm
+      - rn
+      - ro
+      - ru
+      - sa
+      - sc
+      - sd
+      - se
+      - sm
+      - sg
+      - sr
+      - gd
+      - sn
+      - si
+      - sk
+      - sl
+      - so
+      - st
+      - es
+      - su
+      - sw
+      - ss
+      - sv
+      - ta
+      - te
+      - tg
+      - th
+      - ti
+      - bo
+      - tk
+      - tl
+      - tn
+      - to
+      - tr
+      - ts
+      - tt
+      - tw
+      - ty
+      - ug
+      - uk
+      - ur
+      - uz
+      - ve
+      - vi
+      - vo
+      - wa
+      - cy
+      - wo
+      - fy
+      - xh
+      - yi
+      - yo
+      - za
+      - zu
+      type: string
+    Link:
+      required:
+      - locator
+      - type
+      type: object
+      properties:
+        name:
+          description: The name of the link.
+          type: string
+          nullable: true
+        locator:
+          description: The permanent URI of the link.
+          type: object
+          allOf:
+          - $ref: "#/components/schemas/URI"
+        type:
+          description: The type of the resource. Always 'Link'
+          type: string
+    
+    GeoBlockingLocation:
+      description: The location to which the content is restricted (e.g. 'Switzerland').
+      required:
+      - sourceValue
+      type: object
+      properties:
+        sourceValue:
+          type: string
+          
+    Occupation:
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          type: array
+          items:
+            $ref: "#/components/schemas/Text"
+          
+    Person:
+      required:
+      - identifiers
+      - type
+      type: object
+      properties:
+        name:
+          type: string
+          writeOnly: true
+        identifiers:
+          description: The alternative identifiers of the person.
+          type: array
+          items:
+            $ref: "#/components/schemas/Identifier"
+        occupations:
+          description: The role(s) the person takes in relation to the asset.
+          type: array
+          items:
+            $ref: "#/components/schemas/Occupation"
+          nullable: true
+        alias:
+          type: array
+          items:
+            type: string
+          nullable: true
+        type:
+          description: The type of the agent. Always 'Person'
+          type: string
+    
+    Picture:
+      required:
+      - locator
+      - type
+      type: object
+      properties:
+        name:
+          description: The name of the picture. This can be a filename or a title.
+          type: array
+          items:
+            $ref: "#/components/schemas/Text"
+          nullable: true
+        description:
+          description: The description of the picture. This can be a caption or alternative
+            text of the picture.
+          type: array
+          items:
+            $ref: "#/components/schemas/Text"
+          nullable: true
+        locator:
+          description: The permanent URI from where the picture can be accessed.
+          type: object
+          allOf:
+          - $ref: "#/components/schemas/URI"
+        width:
+          format: int32
+          description: The width of the picture in pixels.
+          type: integer
+          nullable: true
+        height:
+          format: int32
+          description: The height of the picture in pixels.
+          type: integer
+          nullable: true
+        copyright:
+          description: The copyright statement.
+          type: string
+          nullable: true
+        altText:
+          description: The alternative text.
+          type: array
+          items:
+            $ref: "#/components/schemas/Text"
+          nullable: true
+        type:
+          description: The type of the resource. Always 'Picture'
+          type: string
+    Publisher:
+      description: The business unit or external organisation publishing the metadata.
+      enum:
+      - SRF
+      - RTS
+      - RSI
+      - RTR
+      - SWI
+      type: string
+    Provenance:
+      description: The source system publishing the metadata.
+      enum:
+      - AIS_SRF
+      - CMS_SRF
+      - Play_SRF
+      - Escenic_RSI
+      - Escenic_RTS
+      - Angebotsportfolio_SRF
+      - CMS_SWI
+      - WhatsOn_SRF
+      - OpenMedia_SRF
+      - OpenMedia_RTR
+      - AIBOX_SRGSSR
+      - Faro_SRF
+      - Siranau_RTS
+      - Gico_RTS
+      - DigAS_SRF
+      - DigAS_RTR
+      - CUE_RSI
+      - PlaySuisse_SRGSSR
+      - SAM_SRGSSR
+      - CUE_RTS
+      - AS_STXT
+      type: string
+    Resource:
+      description: Resources are additional files or assets like pictures or documents
+        belonging to a specific editorial object.
+      type: object
+      oneOf:
+      - $ref: "#/components/schemas/Document"
+      - $ref: "#/components/schemas/Picture"
+      - $ref: "#/components/schemas/Link"
+      discriminator:
+        propertyName: type
+        mapping:
+          Document: "#/components/schemas/Document"
+          Picture: "#/components/schemas/Picture"
+          Link: "#/components/schemas/Link"
+          
+    Team:
+      required:
+      - type
+      type: object
+      properties:
+        name:
+          type: string
+          writeOnly: true
+        type:
+          description: The type of the agent. Always 'Team'
+          type: string
+          
+    Text:
+      description: Container for textual metadata like titles or descriptions including
+        an optional language.
+      required:
+      - content
+      type: object
+      properties:
+        content:
+          description: The textual content.
+          type: string
+        language:
+          description: Language this content is written in.
+          type: string
+          allOf:
+          - $ref: "#/components/schemas/Language"
+          nullable: true
+    URI:
+      description: The uniform resource identifier (URI) is intended to identify abstract
+        or physical resources.
+      type: object
+      properties:
+        url:
+          description: A uniform resource locator (URL) is a reference to a resource
+            that specifies its location on a computer network and a mechanism for
+            retrieving it.
+          type: string
+          nullable: true
+        urn:
+          description: "A uniform resource name (URN) identifying the resource, might\
+            \ not be unique depending on the source system."
+          type: string
+          nullable: true
+  securitySchemes:
+    auth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.srgssr.ch/oauth/v1/accesstoken?grant_type=client_credentials
+          scopes: {}
