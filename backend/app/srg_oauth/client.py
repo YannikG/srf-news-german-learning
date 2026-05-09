@@ -20,9 +20,10 @@ class SrgOAuthClientError(Exception):
 class SrgOAuthHttpError(SrgOAuthClientError):
     """HTTP error from the token endpoint (e.g. 401, 429)."""
 
-    def __init__(self, message: str, status_code: int) -> None:
+    def __init__(self, message: str, status_code: int, body: str = "") -> None:
         super().__init__(message)
         self.status_code = status_code
+        self.body = body
 
 
 class SrgOAuthTokenResponseError(SrgOAuthClientError):
@@ -48,7 +49,8 @@ class SrgOAuthClient:
         self._mono: Callable[[], float] = monotonic if monotonic is not None else time.monotonic
         self._own_client = http_client is None
         self._client = http_client or httpx.Client(timeout=request_timeout_seconds)
-        self._lock = threading.Lock()
+        self._cache_lock = threading.Lock()
+        self._fetch_lock = threading.Lock()
         self._token: str | None = None
         self._cache_until_mono: float | None = None
 
@@ -64,7 +66,7 @@ class SrgOAuthClient:
 
     def get_access_token(self) -> str:
         """Return a valid access token, using the in-memory cache when still fresh."""
-        with self._lock:
+        with self._cache_lock:
             now = self._mono()
             if (
                 self._token is not None
@@ -72,29 +74,49 @@ class SrgOAuthClient:
                 and now < self._cache_until_mono
             ):
                 return self._token
-            token, cache_seconds = self._request_token_unlocked()
-            self._token = token
-            self._cache_until_mono = now + cache_seconds
-            return token
 
-    def _request_token_unlocked(self) -> tuple[str, float]:
-        response = self._client.post(
-            TOKEN_URL,
-            auth=(self._consumer_key, self._consumer_secret),
-            data={"grant_type": "client_credentials"},
-            headers={
-                "Content-Type": "application/x-www-form-urlencoded",
-                "User-Agent": USER_AGENT,
-            },
-        )
+        with self._fetch_lock:
+            with self._cache_lock:
+                now = self._mono()
+                if (
+                    self._token is not None
+                    and self._cache_until_mono is not None
+                    and now < self._cache_until_mono
+                ):
+                    return self._token
+
+            token, cache_seconds = self._do_token_request()
+
+            with self._cache_lock:
+                now = self._mono()
+                self._token = token
+                self._cache_until_mono = now + cache_seconds
+                return token
+
+    def _do_token_request(self) -> tuple[str, float]:
+        try:
+            response = self._client.post(
+                TOKEN_URL,
+                auth=(self._consumer_key, self._consumer_secret),
+                data={"grant_type": "client_credentials"},
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": USER_AGENT,
+                },
+            )
+        except httpx.RequestError as exc:
+            raise SrgOAuthClientError(f"SRG OAuth token request failed: {exc}") from exc
+
+        body = response.text
         if response.status_code == 401:
-            raise SrgOAuthHttpError("SRG OAuth token request rejected (401).", 401)
+            raise SrgOAuthHttpError("SRG OAuth token request rejected (401).", 401, body)
         if response.status_code == 429:
-            raise SrgOAuthHttpError("SRG OAuth token rate limited (429).", 429)
+            raise SrgOAuthHttpError("SRG OAuth token rate limited (429).", 429, body)
         if response.status_code != httpx.codes.OK:
             raise SrgOAuthHttpError(
                 f"SRG OAuth token request failed with status {response.status_code}.",
                 response.status_code,
+                body,
             )
         try:
             parsed = response.json()

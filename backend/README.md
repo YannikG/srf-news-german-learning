@@ -70,7 +70,7 @@ Der Token-Client in `app/srg_oauth/` spricht ausschliesslich den SRG-Endpoint **
 
 Beide müssen gesetzt sein, sobald Code einen Client über `SrgSsrOAuthSettings()` oder `build_srg_oauth_client()` ohne explizites Settings-Objekt baut (sonst Validierungsfehler von pydantic-settings beim Start des Aufrufs).
 
-**Programm-API:** `from app.srg_oauth import SrgOAuthClient`, `SrgSsrOAuthSettings`, `build_srg_oauth_client`; Zugriffstoken über `get_access_token()`. User-Agent auf Token-Requests: Projektname `srf-news-german-learning`. Token wird im Speicher gecacht und etwa 60 Sekunden vor Ablauf der vom Server gemeldeten Gültigkeit erneuert.
+**Programm-API:** `from app.srg_oauth import SrgOAuthClient`, `SrgSsrOAuthSettings`, `build_srg_oauth_client`; Zugriffstoken über `get_access_token()`. User-Agent auf Token-Requests: Projektname `srf-news-german-learning`. Token wird im Speicher gecacht und etwa 60 Sekunden vor Ablauf der vom Server gemeldeten Gültigkeit erneuert. Bei HTTP-Fehlern wirft `SrgOAuthHttpError` den Response-Text zusätzlich in `body`; Verbindungs- und Timeoutfehler von httpx erscheinen als `SrgOAuthClientError` mit verketteter Ursache (`__cause__`).
 
 Für Compose oder lokale Shell: Variablen in `.env` bzw. in der Service-Umgebung setzen (keine Secrets ins Git).
 

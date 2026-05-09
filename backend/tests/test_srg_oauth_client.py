@@ -11,6 +11,7 @@ from app.srg_oauth.client import (
     TOKEN_URL,
     USER_AGENT,
     SrgOAuthClient,
+    SrgOAuthClientError,
     SrgOAuthHttpError,
     SrgOAuthTokenResponseError,
 )
@@ -85,6 +86,7 @@ def test_token_401_raises() -> None:
         with pytest.raises(SrgOAuthHttpError) as exc:
             oauth.get_access_token()
         assert exc.value.status_code == 401
+        assert "invalid_client" in exc.value.body
     finally:
         client.close()
 
@@ -99,6 +101,22 @@ def test_token_429_raises() -> None:
         with pytest.raises(SrgOAuthHttpError) as exc:
             oauth.get_access_token()
         assert exc.value.status_code == 429
+        assert "slow down" in exc.value.body
+    finally:
+        client.close()
+
+
+def test_token_request_error_wraps_as_client_error() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("simulated network failure", request=request)
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    try:
+        oauth = SrgOAuthClient("k", "s", http_client=client)
+        with pytest.raises(SrgOAuthClientError) as exc:
+            oauth.get_access_token()
+        assert "SRG OAuth token request failed" in str(exc.value)
+        assert exc.value.__cause__ is not None
     finally:
         client.close()
 
