@@ -16,6 +16,7 @@ from flask import Flask
 
 from .db import APP_DB_PATH, init_database
 from .health import health_bp
+from .words import words_bp
 
 
 def create_app(test_config: Mapping[str, Any] | None = None) -> Flask:
@@ -26,6 +27,7 @@ def create_app(test_config: Mapping[str, Any] | None = None) -> Flask:
         app.config.update(test_config)
 
     app.register_blueprint(health_bp, url_prefix="/api")
+    app.register_blueprint(words_bp, url_prefix="/api")
 
     db_path_str = app.config.get("DATABASE_PATH")
     if db_path_str:
