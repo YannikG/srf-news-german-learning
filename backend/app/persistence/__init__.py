@@ -1,4 +1,4 @@
-"""Shared SQLite access for repositories (foreign keys, row factory)."""
+"""Shared SQLAlchemy SQLite engine for repositories (foreign keys on connect)."""
 
 from __future__ import annotations
 

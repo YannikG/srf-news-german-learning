@@ -9,16 +9,16 @@ Das Backend trennt **HTTP**, **Anwendungslogik** und **Persistenz**:
 | **Routes** (Flask-Blueprint) | Request parsen, Statuscodes und JSON; keine Geschäftsregeln | `app/words/routes.py` |
 | **Service** | Validierung, Fehler semantisch (z. B. 404), Orchestrierung | `app/words/service.py` |
 | **Repository** | SQL und Tabellen-Mapping; keine HTTP-Kenntnis | `app/words/repository.py` |
-| **Datenbank-Hülle** | SQLite-Pragmas, Commit nach erfolgreichem Block, Rollback bei Fehler, dann Close | `app/persistence/sqlite_db.py` |
+| **Datenbank-Hülle** | SQLAlchemy-``Engine`` (Core, kein ORM), ``PRAGMA foreign_keys``, Transaktionen via ``begin()`` | `app/persistence/sqlite_db.py` |
 
-Migrationen und idempotentes Anlegen der Datei bleiben in `app/db/` (Runner, SQL-Dateien). Repositories nutzen nur eine bestehende Datei über `SqlDatabase`.
+Migrationen und idempotentes Anlegen der Datei bleiben in `app/db/` (stdlib-``sqlite3``, SQL-Dateien). **Repositories** sprechen dieselbe Datei über **SQLAlchemy 2.0 Core** (`Engine`, `text()`, gebundene Parameter, ``RowMapping`` → ``dict``), ohne Mapper-Klassen für Entitäten.
 
-**Hinweis:** Ohne explizites `commit()` verwirft SQLite offene Schreibtransaktionen beim Schliessen der Connection. `SqlDatabase.connection()` committet deshalb nach normalem Verlassen des `with`-Blocks und rollt bei Exceptions zurück.
+**Hinweis:** Pro Repository-Operation ``with db.begin() as conn:`` — entspricht einer Transaktion mit Commit bei Erfolg und Rollback bei Fehler (ersetzt das frühere manuelle ``commit()`` auf roher ``sqlite3``-Connection).
 
 ## Repository-Pattern
 
 - **`WordsRepositoryPort`** (`app/words/ports.py`): `typing.Protocol` beschreibt die Methoden, die der **WordsService** von der Persistenz erwartet. So bleibt der Service testbar und unabhängig von SQLite-Details.
-- **`SqliteWordsRepository`** (`app/words/repository.py`): konkrete Implementierung; erhält `SqlDatabase`, öffnet pro Operation eine kurze Connection (`with db.connection()`).
+- **`SqliteWordsRepository`** (`app/words/repository.py`): konkrete Implementierung; erhält `SqlDatabase`, pro Operation ``with db.begin() as conn`` und ``conn.execute(text(...), params)``.
 
 Neue Tabellen: eigenes `…RepositoryPort` + `Sqlite…Repository`, Service darauf aufbauen.
 
@@ -46,7 +46,7 @@ service  →  ports (Protocol)
    ↓
 repository  →  SqlDatabase
    ↓
-sqlite3
+SQLAlchemy Core (Engine, text) → sqlite3 (DBAPI)
 ```
 
 `app/db` (Migrationen) hängt nicht von `app/words` ab. `app/persistence` hängt nicht von Flask ab.

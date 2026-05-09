@@ -11,9 +11,9 @@ backend/
   app/
     __init__.py        # create_app() factory
     db/                # SQLite: Migrationen, Runner, init_database()
-    persistence/       # SqlDatabase, gemeinsame Connection-Konfiguration
+    persistence/       # SqlDatabase (SQLAlchemy Core engine for SQLite)
     health.py          # /api/health blueprint
-    words/             # Wörterbuch: routes, service, repository, ports, factory
+    words/             # dictionary API: routes, service, repository, ports, factory
   docs/
     architecture.md    # Schichtenmodell und Wiring
   tests/
