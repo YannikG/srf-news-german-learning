@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .repository import WordsRepository
+from .ports import WordsRepositoryPort
 
 ALLOWED_DIFFICULTIES = frozenset({"Neu", "Schwer", "Mittel", "Leicht"})
 
@@ -17,7 +17,7 @@ class WordServiceError(Exception):
 
 
 class WordsService:
-    def __init__(self, repo: WordsRepository) -> None:
+    def __init__(self, repo: WordsRepositoryPort) -> None:
         self._repo = repo
 
     def list_words(self, *, category: str | None = None) -> list[dict[str, Any]]:

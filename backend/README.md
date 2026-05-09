@@ -2,6 +2,8 @@
 
 Flask backend for the SRF News German Learning app. Phase 1 ships the application factory plus a health endpoint at `GET /api/health`. Later phases extend the same factory with real blueprints.
 
+Architektur (Schichten, Repository- und Service-Pattern, Flask-Wiring): [`docs/architecture.md`](docs/architecture.md).
+
 ## Layout
 
 ```
@@ -9,7 +11,11 @@ backend/
   app/
     __init__.py        # create_app() factory
     db/                # SQLite: Migrationen, Runner, init_database()
+    persistence/       # SqlDatabase, gemeinsame Connection-Konfiguration
     health.py          # /api/health blueprint
+    words/             # Wörterbuch: routes, service, repository, ports, factory
+  docs/
+    architecture.md    # Schichtenmodell und Wiring
   tests/
     conftest.py        # Flask test client fixture
     test_health.py

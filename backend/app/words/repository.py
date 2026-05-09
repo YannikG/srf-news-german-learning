@@ -1,36 +1,30 @@
-"""SQLite-Zugriff für die Tabelle ``words``."""
+"""SQLite-Implementierung von ``WordsRepositoryPort``."""
 
 from __future__ import annotations
 
 import sqlite3
-from pathlib import Path
 from typing import Any
 
-
-def _connect(path: str | Path) -> sqlite3.Connection:
-    conn = sqlite3.connect(str(path))
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+from ..persistence.sqlite_db import SqlDatabase
 
 
 def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
     return dict(row)
 
 
-class WordsRepository:
-    """CRUD für ``words``; eine Verbindung pro öffentlicher Methode."""
+class SqliteWordsRepository:
+    """CRUD für Tabelle ``words`` über ``SqlDatabase`` (eine Connection pro Operation)."""
 
     _SELECT = (
         "SELECT id, german_label, category, difficulty, translation, cefr_level, "
         "created_at, updated_at FROM words WHERE id = ?"
     )
 
-    def __init__(self, db_path: str | Path) -> None:
-        self._db_path = Path(db_path)
+    def __init__(self, db: SqlDatabase) -> None:
+        self._db = db
 
     def list(self, *, category: str | None = None) -> list[dict[str, Any]]:
-        with _connect(self._db_path) as conn:
+        with self._db.connection() as conn:
             if category is None:
                 cur = conn.execute(
                     "SELECT id, german_label, category, difficulty, translation, cefr_level, "
@@ -45,7 +39,7 @@ class WordsRepository:
             return [_row_to_dict(r) for r in cur.fetchall()]
 
     def get(self, word_id: int) -> dict[str, Any] | None:
-        with _connect(self._db_path) as conn:
+        with self._db.connection() as conn:
             cur = conn.execute(self._SELECT, (word_id,))
             row = cur.fetchone()
             return _row_to_dict(row) if row else None
@@ -59,7 +53,7 @@ class WordsRepository:
         translation: str,
         cefr_level: str | None,
     ) -> dict[str, Any]:
-        with _connect(self._db_path) as conn:
+        with self._db.connection() as conn:
             cur = conn.execute(
                 "INSERT INTO words (german_label, category, difficulty, translation, cefr_level) "
                 "VALUES (?, ?, ?, ?, ?)",
@@ -74,7 +68,7 @@ class WordsRepository:
     def update(self, word_id: int, fields: dict[str, Any]) -> dict[str, Any] | None:
         allowed = {"german_label", "category", "difficulty", "translation", "cefr_level"}
         subset = {k: v for k, v in fields.items() if k in allowed}
-        with _connect(self._db_path) as conn:
+        with self._db.connection() as conn:
             if not subset:
                 cur = conn.execute(self._SELECT, (word_id,))
                 row = cur.fetchone()
@@ -91,6 +85,6 @@ class WordsRepository:
             return _row_to_dict(row)
 
     def delete(self, word_id: int) -> bool:
-        with _connect(self._db_path) as conn:
+        with self._db.connection() as conn:
             cur = conn.execute("DELETE FROM words WHERE id = ?", (word_id,))
             return cur.rowcount > 0
