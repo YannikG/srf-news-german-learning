@@ -1,4 +1,4 @@
-"""SQLite app.db: Pfade, Migrationen, öffentliche Init-Hilfen."""
+"""SQLite app.db path, migrations, and public init helpers."""
 
 from __future__ import annotations
 
@@ -9,12 +9,12 @@ from .runner import MIGRATION_IDS, apply_migrations
 
 __all__ = ["APP_DB_PATH", "MIGRATION_IDS", "init_database"]
 
-# Fester Pfad zum Compose-Volume `/data`; Tests setzen DATABASE_PATH in der App-Config.
+# Default path for Compose volume mount at `/data`; tests override DATABASE_PATH in config.
 APP_DB_PATH = Path("/data/app.db")
 
 
 def init_database(path: str | Path) -> list[str]:
-    """Wendet ausstehende Migrationen an. Liste: Stems der jetzt ausgeführten SQL-Dateien."""
+    """Apply pending migrations. Returns stems of SQL files executed in this call."""
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(p))

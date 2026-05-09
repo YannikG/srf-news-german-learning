@@ -1,1 +1,1 @@
-"""Gebündelte SQL-Migrationsdateien (*.sql)."""
+"""Bundled SQL migration files (*.sql)."""

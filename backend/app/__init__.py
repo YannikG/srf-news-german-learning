@@ -40,7 +40,7 @@ def create_app(test_config: Mapping[str, Any] | None = None) -> Flask:
 def _register_cli(app: Flask) -> None:
     @app.cli.command("init-db")
     def init_db_command() -> None:
-        """Wendet ausstehende Migrationen an (bestehende DB: Release-Deploy, Schema-Updates)."""
+        """Apply pending migrations (existing DB: release deploy, schema updates)."""
         db_path = app.config.get("DATABASE_PATH")
         if not db_path:
             raise click.UsageError("DATABASE_PATH is not set.")

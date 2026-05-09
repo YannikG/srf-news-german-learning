@@ -1,4 +1,4 @@
-"""Wendet ausstehende Migrationen aus ``app/db/sql/*.sql`` in Namensreihenfolge an."""
+"""Apply pending migrations from ``app/db/sql/*.sql`` in filename order."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ _SQL_DIR = Path(__file__).resolve().parent / "sql"
 
 
 def migration_sql_files() -> list[tuple[str, Path]]:
-    """Liefert ``(migration_id, path)`` sortiert nach Dateiname (z. B. ``001_…``, ``002_…``)."""
+    """Return ``(migration_id, path)`` pairs sorted by filename (e.g. ``001_…``, ``002_…``)."""
     paths = sorted(_SQL_DIR.glob("*.sql"), key=lambda p: p.name)
     return [(p.stem, p) for p in paths if p.is_file()]
 
@@ -27,7 +27,7 @@ def _applied_migration_ids(conn: sqlite3.Connection) -> set[str]:
 
 
 def apply_migrations(conn: sqlite3.Connection) -> list[str]:
-    """Führt fehlende SQL-Dateien aus, bucht in ``_migrations``. Rückgabe: Stems dieser Runde."""
+    """Run missing SQL files and record rows in ``_migrations``. Returns stems applied this run."""
     conn.execute("PRAGMA foreign_keys = ON")
     applied = _applied_migration_ids(conn)
     ran: list[str] = []
