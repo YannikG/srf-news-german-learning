@@ -63,7 +63,7 @@ class SqliteArticlesRepository:
             if fts_expr is None:
                 stmt = text(
                     f"SELECT {_LIST_COLUMNS} FROM articles "
-                    "WHERE date(release_date) = :day "
+                    "WHERE release_date >= :day AND release_date < date(:day, '+1 day') "
                     "AND (:after_id IS NULL OR id < :after_id) "
                     "ORDER BY id DESC "
                     "LIMIT :lim",
@@ -76,7 +76,7 @@ class SqliteArticlesRepository:
                 stmt = text(
                     f"SELECT {_LIST_COLUMNS_QUALIFIED} FROM articles AS a "
                     "INNER JOIN articles_fts ON articles_fts.rowid = a.id "
-                    "WHERE date(a.release_date) = :day "
+                    "WHERE a.release_date >= :day AND a.release_date < date(:day, '+1 day') "
                     "AND (:after_id IS NULL OR a.id < :after_id) "
                     "AND articles_fts MATCH :fts "
                     "ORDER BY a.id DESC "
