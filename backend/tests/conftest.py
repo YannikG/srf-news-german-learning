@@ -10,8 +10,14 @@ from app import create_app
 
 
 @pytest.fixture()
-def app() -> Flask:
-    return create_app({"TESTING": True})
+def app(tmp_path_factory: pytest.TempPathFactory) -> Flask:
+    db_path = tmp_path_factory.mktemp("db") / "app.db"
+    return create_app(
+        {
+            "TESTING": True,
+            "DATABASE_PATH": str(db_path),
+        },
+    )
 
 
 @pytest.fixture()
