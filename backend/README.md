@@ -7,15 +7,17 @@ Flask backend for the SRF News German Learning app. Phase 1 ships the applicatio
 ```
 backend/
   app/
-    __init__.py     # create_app() factory
-    health.py       # /api/health blueprint
+    __init__.py        # create_app() factory
+    health.py          # /api/health blueprint
   tests/
-    conftest.py     # Flask test client fixture
+    conftest.py        # Flask test client fixture
     test_health.py
-  wsgi.py           # gunicorn entry: `gunicorn wsgi:app`
+  wsgi.py              # gunicorn entry: `gunicorn wsgi:app`
   requirements.txt
   requirements-dev.txt
+  pyproject.toml       # pytest configuration
   Dockerfile
+  .dockerignore
 ```
 
 ## Local setup (relative to repo root)
