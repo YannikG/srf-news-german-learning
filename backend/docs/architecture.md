@@ -6,9 +6,9 @@ Das Backend trennt **HTTP**, **Anwendungslogik** und **Persistenz**:
 
 | Schicht | Rolle | Beispiel |
 |--------|--------|----------|
-| **Routes** (Flask-Blueprint) | Request parsen, Statuscodes und JSON; keine Geschäftsregeln | `app/words/routes.py` |
-| **Service** | Validierung, Fehler semantisch (z. B. 404), Orchestrierung | `app/words/service.py` |
-| **Repository** | SQL und Tabellen-Mapping; keine HTTP-Kenntnis | `app/words/repository.py` |
+| **Routes** (Flask-Blueprint) | Request parsen, Statuscodes und JSON; keine Geschäftsregeln | `app/words/routes.py`, `app/articles/routes.py` |
+| **Service** | Validierung, Fehler semantisch (z. B. 404), Orchestrierung | `app/words/service.py`, `app/articles/service.py` |
+| **Repository** | SQL und Tabellen-Mapping; keine HTTP-Kenntnis | `app/words/repository.py`, `app/articles/repository.py` |
 | **Datenbank-Hülle** | SQLAlchemy-``Engine`` (Core, kein ORM), ``PRAGMA foreign_keys``, Transaktionen via ``begin()`` | `app/persistence/sqlite_db.py` |
 
 Migrationen und idempotentes Anlegen der Datei bleiben in `app/db/` (stdlib-``sqlite3``, SQL-Dateien). **Repositories** sprechen dieselbe Datei über **SQLAlchemy 2.0 Core** (`Engine`, `text()`, gebundene Parameter, ``RowMapping`` → ``dict``), ohne Mapper-Klassen für Entitäten.
@@ -19,6 +19,7 @@ Migrationen und idempotentes Anlegen der Datei bleiben in `app/db/` (stdlib-``sq
 
 - **`WordsRepositoryPort`** (`app/words/ports.py`): `typing.Protocol` beschreibt die Methoden, die der **WordsService** von der Persistenz erwartet. So bleibt der Service testbar und unabhängig von SQLite-Details.
 - **`SqliteWordsRepository`** (`app/words/repository.py`): konkrete Implementierung; erhält `SqlDatabase`, pro Operation ``with db.begin() as conn`` und ``conn.execute(text(...), params)``.
+- **`ArticlesRepositoryPort`** / **`SqliteArticlesRepository`** (`app/articles/ports.py`, `app/articles/repository.py`): gleiches Muster für lesende Artikel-API inkl. FTS5-Titelsuche (Migration ``003_articles_fts``).
 
 Neue Tabellen: eigenes `…RepositoryPort` + `Sqlite…Repository`, Service darauf aufbauen.
 
@@ -26,16 +27,18 @@ Neue Tabellen: eigenes `…RepositoryPort` + `Sqlite…Repository`, Service dara
 
 **`WordsService`** erhält im Konstruktor ein Objekt, das `WordsRepositoryPort` erfüllt. Er validiert Eingaben, wirft bei Regelverletzungen **`WordServiceError`** (mit HTTP-Status), mappt keine SQL-Strings.
 
+**`ArticlesService`** nutzt **`ArticlesRepositoryPort`** und wirft bei Regelverletzungen **`ArticleServiceError`** (analog JSON-Fehlerantwort).
+
 ## Flask-Wiring
 
 1. In **`create_app`** (`app/__init__.py`): sobald `DATABASE_PATH` gesetzt ist, wird **`SqlDatabase`** erzeugt und unter dem Schlüssel aus **`SQL_DATABASE_EXTENSION_KEY`** (aktuell `"sql_database"`) in **`app.extensions`** abgelegt.
-2. Routen holen die Instanz mit **`current_app.extensions[…]`** und rufen **`build_words_service(db)`** (`app/words/factory.py`) auf. Das ist die **einzige** Fabrik-Stelle, an der Service und Repository zusammengesteckt werden (kein verstecktes `new` in den Views).
+2. Routen holen die Instanz mit **`current_app.extensions[…]`** und rufen **`build_words_service(db)`** bzw. **`build_articles_service(db)`** (`app/words/factory.py`, `app/articles/factory.py`) auf. Das sind die **Fabrik-Stellen**, an denen Service und Repository zusammengesteckt werden (kein verstecktes `new` in den Views).
 
 Tests setzen wie bisher `DATABASE_PATH` im `test_config`; die Extension wird automatisch mitregistriert.
 
 ## Fehlerbehandlung in der API
 
-Der Blueprint **`words_bp`** registriert einen **`errorhandler`** für **`WordServiceError`** und antwortet mit JSON `{"error": "<Nachricht>"}` und passendem Statuscode.
+Die Blueprints **`words_bp`** und **`articles_bp`** registrieren **`errorhandler`** für **`WordServiceError`** bzw. **`ArticleServiceError`** und antworten mit JSON `{"error": "<Nachricht>"}` und passendem Statuscode.
 
 ## Abhängigkeitsrichtung
 
