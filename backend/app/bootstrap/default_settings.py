@@ -56,6 +56,10 @@ def apply_default_config(app: Flask, test_config: Mapping[str, Any] | None) -> N
     app.config.setdefault("SIDECAR_BASE_URL", os.environ.get("SIDECAR_BASE_URL", ""))
     app.config.setdefault("SIDECAR_SHARED_SECRET", os.environ.get("SIDECAR_SHARED_SECRET", ""))
     app.config.setdefault("OLLAMA_BASE_URL", os.environ.get("OLLAMA_BASE_URL", ""))
+    app.config.setdefault(
+        "OLLAMA_SIMPLIFY_MODEL",
+        os.environ.get("OLLAMA_SIMPLIFY_MODEL", "gemma4:e2b"),
+    )
 
     if test_config is not None:
         app.config.update(test_config)
