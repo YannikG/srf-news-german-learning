@@ -1,4 +1,7 @@
+import Aura from '@primeuix/themes/aura';
 import { flushPromises, mount } from '@vue/test-utils';
+import PrimeVue from 'primevue/config';
+import ToastService from 'primevue/toastservice';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import App from './App.vue';
@@ -12,9 +15,23 @@ describe('App shell', () => {
   it('mounts layout with navigation and outlet', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ ok: true, sidecar: { status: 'ok' } }),
+      vi.fn().mockImplementation((input: RequestInfo | URL) => {
+        const url =
+          typeof input === 'string'
+            ? input
+            : input instanceof URL
+              ? input.href
+              : (input as Request).url;
+        if (url.includes('/api/articles')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ items: [], next_cursor: null }),
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ ok: true, sidecar: { status: 'ok' } }),
+        });
       })
     );
 
@@ -27,16 +44,21 @@ describe('App shell', () => {
 
     const wrapper = mount(App, {
       global: {
-        plugins: [router],
+        plugins: [
+          router,
+          ToastService,
+          [PrimeVue, { theme: { preset: Aura, options: { darkModeSelector: false } } }],
+        ],
       },
     });
 
     await flushPromises();
 
     expect(wrapper.text()).toContain('SRF News Lernen');
-    expect(wrapper.text()).toContain('Mobile-first App-Shell');
+    expect(wrapper.text()).toContain('News und Lernmodus');
     expect(wrapper.find('main').exists()).toBe(true);
-    expect(wrapper.text()).toContain('App-Shell bereit');
+    expect(wrapper.text()).toContain('News');
+    expect(wrapper.text()).toContain('Timeline aus der lokalen Datenbank');
     expect(wrapper.text()).toContain('API: OK');
     expect(wrapper.text()).toContain('Sidecar: OK');
   });
