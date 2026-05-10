@@ -205,6 +205,35 @@ def test_go_to_sleep_propagates_stop_failure(
     assert data.get("detail") == "boom"
 
 
+def test_normalize_idle_clamps_warn_to_idle(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    app = _db_app(
+        tmp_path_factory,
+        OLLAMA_IDLE_SHUTDOWN_SECONDS=40,
+        OLLAMA_SHUTDOWN_WARNING_SECONDS=999,
+    )
+    assert app.config["OLLAMA_IDLE_SHUTDOWN_SECONDS"] == 40
+    assert app.config["OLLAMA_SHUTDOWN_WARNING_SECONDS"] == 40
+
+
+def test_normalize_ollama_idle_invalid_strings_use_defaults(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    app = _db_app(
+        tmp_path_factory,
+        OLLAMA_IDLE_SHUTDOWN_SECONDS="nope",
+        OLLAMA_SHUTDOWN_WARNING_SECONDS="x",
+    )
+    assert app.config["OLLAMA_IDLE_SHUTDOWN_SECONDS"] == 600
+    assert app.config["OLLAMA_SHUTDOWN_WARNING_SECONDS"] == 60
+
+
+def test_normalize_zero_idle_becomes_one(tmp_path_factory: pytest.TempPathFactory) -> None:
+    app = _db_app(tmp_path_factory, OLLAMA_IDLE_SHUTDOWN_SECONDS=0)
+    assert app.config["OLLAMA_IDLE_SHUTDOWN_SECONDS"] == 1
+
+
 def test_app_registers_idle_service(tmp_path_factory: pytest.TempPathFactory) -> None:
     app = _db_app(tmp_path_factory)
     ext = app.extensions.get(OLLAMA_IDLE_SERVICE_KEY)

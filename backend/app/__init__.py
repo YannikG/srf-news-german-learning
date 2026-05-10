@@ -34,7 +34,30 @@ def _int_from_env(name: str, default: int) -> int:
     raw = os.environ.get(name)
     if raw is None or str(raw).strip() == "":
         return default
-    return int(str(raw).strip())
+    try:
+        return int(str(raw).strip())
+    except ValueError:
+        return default
+
+
+def _normalize_ollama_idle_config(app: Flask) -> tuple[int, int]:
+    """Return (idle_seconds, warning_seconds) with sane bounds; updates app.config."""
+    default_idle, default_warn = 600, 60
+    raw_idle = app.config.get("OLLAMA_IDLE_SHUTDOWN_SECONDS", default_idle)
+    raw_warn = app.config.get("OLLAMA_SHUTDOWN_WARNING_SECONDS", default_warn)
+    try:
+        idle_sec = int(raw_idle)
+    except (TypeError, ValueError):
+        idle_sec = default_idle
+    try:
+        warn_sec = int(raw_warn)
+    except (TypeError, ValueError):
+        warn_sec = default_warn
+    idle_sec = max(1, idle_sec)
+    warn_sec = max(0, min(warn_sec, idle_sec))
+    app.config["OLLAMA_IDLE_SHUTDOWN_SECONDS"] = idle_sec
+    app.config["OLLAMA_SHUTDOWN_WARNING_SECONDS"] = warn_sec
+    return idle_sec, warn_sec
 
 
 def create_app(test_config: Mapping[str, Any] | None = None) -> Flask:
@@ -75,8 +98,7 @@ def create_app(test_config: Mapping[str, Any] | None = None) -> Flask:
     sidecar_base = str(app.config.get("SIDECAR_BASE_URL") or "").strip()
     sidecar_secret_raw = app.config.get("SIDECAR_SHARED_SECRET")
     sidecar_secret = sidecar_secret_raw if isinstance(sidecar_secret_raw, str) else ""
-    idle_sec = int(app.config["OLLAMA_IDLE_SHUTDOWN_SECONDS"])
-    warn_sec = int(app.config["OLLAMA_SHUTDOWN_WARNING_SECONDS"])
+    idle_sec, warn_sec = _normalize_ollama_idle_config(app)
 
     def _stop_ollama() -> tuple[bool, str | None]:
         if not sidecar_base:

@@ -32,7 +32,7 @@ class OllamaIdleService:
         if idle_shutdown_seconds <= 0:
             raise ValueError("idle_shutdown_seconds must be positive")
         self._idle = float(idle_shutdown_seconds)
-        self._warn = min(float(warning_seconds), self._idle)
+        self._warn = max(0.0, min(float(warning_seconds), self._idle))
         self._stop_fn = stop_fn
         self._idle_enabled = idle_enabled
         self._refcount = 0
