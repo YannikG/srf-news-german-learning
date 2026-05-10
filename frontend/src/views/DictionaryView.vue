@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AutoComplete from 'primevue/autocomplete';
+import AutoComplete, { type AutoCompleteCompleteEvent } from 'primevue/autocomplete';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
@@ -10,7 +10,7 @@ import Select from 'primevue/select';
 import Textarea from 'primevue/textarea';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
-import { reactive, ref } from 'vue';
+import { reactive, ref, type Ref } from 'vue';
 import { useWordsDictionary } from '@/composables/useWordsDictionary';
 import type { Word, WordDifficulty } from '@/types/word';
 import { WORD_DIFFICULTIES } from '@/types/word';
@@ -46,12 +46,19 @@ function filterCategorySuggestions(query: string, source: readonly string[]): st
   return source.filter((c) => c.toLowerCase().includes(q));
 }
 
-function onToolbarCategoryComplete(event: { query: string }) {
-  toolbarCategorySuggestions.value = filterCategorySuggestions(event.query, knownCategories.value);
+function applyCategoryFilterSuggestions(
+  target: Ref<string[]>,
+  event: AutoCompleteCompleteEvent
+): void {
+  target.value = filterCategorySuggestions(event.query, knownCategories.value);
 }
 
-function onDialogCategoryComplete(event: { query: string }) {
-  dialogCategorySuggestions.value = filterCategorySuggestions(event.query, knownCategories.value);
+function onToolbarCategoryComplete(event: AutoCompleteCompleteEvent) {
+  applyCategoryFilterSuggestions(toolbarCategorySuggestions, event);
+}
+
+function onDialogCategoryComplete(event: AutoCompleteCompleteEvent) {
+  applyCategoryFilterSuggestions(dialogCategorySuggestions, event);
 }
 
 function resetForm() {
