@@ -20,6 +20,12 @@ _LIST_COLUMNS_QUALIFIED = (
     "a.modification_date, a.cefr_level, a.created_at, a.updated_at"
 )
 
+_DETAIL_WITH_SIMPLIFICATION = (
+    f"{_LIST_COLUMNS_QUALIFIED}, a.markdown_original, "
+    "s.markdown_simplified AS markdown_simplified, "
+    "s.cefr_level AS simplification_cefr_level "
+)
+
 # Letters, digits, and common Latin-1 / Latin Extended-A letters (incl. German umlauts).
 _TOKEN_RE = re.compile(r"[0-9A-Za-z\u00C0-\u024F]+", re.UNICODE)
 
@@ -89,9 +95,7 @@ class SqliteArticlesRepository:
     def get(self, article_id: int) -> dict[str, Any] | None:
         with self._db.begin() as conn:
             stmt = text(
-                "SELECT a.*, "
-                "s.markdown_simplified AS markdown_simplified, "
-                "s.cefr_level AS simplification_cefr_level "
+                f"SELECT {_DETAIL_WITH_SIMPLIFICATION} "
                 "FROM articles AS a "
                 "LEFT JOIN article_simplifications AS s ON s.id = ("
                 "SELECT s2.id FROM article_simplifications AS s2 "

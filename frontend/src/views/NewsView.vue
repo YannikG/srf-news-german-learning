@@ -3,7 +3,7 @@ import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import ProgressSpinner from 'primevue/progressspinner';
 import { computed, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import { fetchArticlesList } from '@/api/fetchArticles';
 import { useNewsRefresh } from '@/composables/useNewsRefresh';
@@ -12,6 +12,7 @@ import { stripMediaFromText } from '@/utils/stripMediaFromText';
 
 const toast = useToast();
 const route = useRoute();
+const router = useRouter();
 const {
   loading: refreshLoading,
   refresh,
@@ -45,6 +46,13 @@ watch(
     if (p) selectedDate.value = p;
   }
 );
+
+watch(selectedDate, (d) => {
+  const cur = parseQueryDate(route.query.d);
+  if (cur === d) return;
+  void router.replace({ path: '/', query: { ...route.query, d } });
+});
+
 const searchInput = ref('');
 const debouncedSearch = ref('');
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -66,6 +74,9 @@ function leadPreview(lead: string | null): string {
   return stripMediaFromText(lead).trim();
 }
 
+/** Ignores stale list responses when date or search changes quickly. */
+let listRequestSeq = 0;
+
 const cooldownLabel = computed(() => {
   const iso = nextAllowedFetchAtIso.value;
   if (!iso || !cooldownActive.value) return '';
@@ -80,29 +91,36 @@ const cooldownLabel = computed(() => {
 });
 
 async function loadList(reset: boolean) {
+  const seq = ++listRequestSeq;
   if (reset) {
     nextCursor.value = null;
     items.value = [];
   }
   listLoading.value = true;
   listError.value = null;
-  const res = await fetchArticlesList({
-    date: selectedDate.value,
-    q: debouncedSearch.value,
-    cursor: reset ? null : nextCursor.value,
-    limit: 20,
-  });
-  listLoading.value = false;
-  if (!res.ok) {
-    listError.value = res.message;
-    return;
+  try {
+    const res = await fetchArticlesList({
+      date: selectedDate.value,
+      q: debouncedSearch.value,
+      cursor: reset ? null : nextCursor.value,
+      limit: 20,
+    });
+    if (seq !== listRequestSeq) return;
+    if (!res.ok) {
+      listError.value = res.message;
+      return;
+    }
+    if (reset) {
+      items.value = res.data.items;
+    } else {
+      items.value = [...items.value, ...res.data.items];
+    }
+    nextCursor.value = res.data.next_cursor;
+  } finally {
+    if (seq === listRequestSeq) {
+      listLoading.value = false;
+    }
   }
-  if (reset) {
-    items.value = res.data.items;
-  } else {
-    items.value = [...items.value, ...res.data.items];
-  }
-  nextCursor.value = res.data.next_cursor;
 }
 
 watch(

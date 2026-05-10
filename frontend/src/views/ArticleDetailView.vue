@@ -5,6 +5,7 @@ import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { fetchArticleDetail } from '@/api/fetchArticles';
 import type { ArticleDetail } from '@/types/article';
+import { renderArticleMarkdown } from '@/utils/renderArticleMarkdown';
 import { stripMediaFromText } from '@/utils/stripMediaFromText';
 
 const route = useRoute();
@@ -22,14 +23,18 @@ const hasSimplification = computed(
   () => !!article.value?.markdown_simplified && article.value.markdown_simplified.length > 0
 );
 
-const bodyText = computed(() => {
+const bodyMarkdown = computed(() => {
   if (!article.value) return '';
   const raw =
     viewMode.value === 'simplified' && hasSimplification.value
       ? article.value.markdown_simplified!
       : article.value.markdown_original;
-  return stripMediaFromText(raw);
+  return raw;
 });
+
+const bodyHtml = computed(() =>
+  bodyMarkdown.value ? renderArticleMarkdown(bodyMarkdown.value) : ''
+);
 
 async function load(id: number) {
   loading.value = true;
@@ -110,9 +115,10 @@ watch(
         aria-label="Artikeltext"
         class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
       >
-        <pre class="whitespace-pre-wrap break-words font-sans text-sm text-slate-800">{{
-          bodyText
-        }}</pre>
+        <div
+          class="article-md max-w-none text-sm text-slate-800 [&_a]:text-sky-800 [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-slate-300 [&_blockquote]:pl-3 [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1 [&_h1]:mb-3 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:text-lg [&_h2]:font-semibold [&_li]:my-0.5 [&_ol]:my-2 [&_p]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-slate-50 [&_pre]:p-3 [&_ul]:my-2"
+          v-html="bodyHtml"
+        />
       </section>
     </template>
   </article>

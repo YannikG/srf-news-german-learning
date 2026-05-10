@@ -1,4 +1,4 @@
-import { computed, onUnmounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { postNewsRefresh, type PostNewsRefreshResult } from '@/api/postNewsRefresh';
 
 function parseUtcMs(iso: string): number {
@@ -6,36 +6,38 @@ function parseUtcMs(iso: string): number {
   return Number.isNaN(t) ? 0 : t;
 }
 
+/** Cooldown is shared across the SPA session so it survives route changes. */
+const nextAllowedFetchAtIso = ref<string | null>(null);
+const nowTick = ref(Date.now());
+let tickTimer: ReturnType<typeof setInterval> | null = null;
+
+function startTick(): void {
+  if (tickTimer != null) return;
+  tickTimer = setInterval(() => {
+    nowTick.value = Date.now();
+  }, 1000);
+}
+
+function stopTick(): void {
+  if (tickTimer != null) {
+    clearInterval(tickTimer);
+    tickTimer = null;
+  }
+}
+
+const cooldownActive = computed(() => {
+  const iso = nextAllowedFetchAtIso.value;
+  if (!iso) return false;
+  return parseUtcMs(iso) > nowTick.value;
+});
+
+watch(cooldownActive, (on) => {
+  if (on) startTick();
+  else stopTick();
+});
+
 export function useNewsRefresh() {
-  const nextAllowedFetchAtIso = ref<string | null>(null);
   const loading = ref(false);
-  const nowTick = ref(Date.now());
-  let timer: ReturnType<typeof setInterval> | null = null;
-
-  function startTick() {
-    if (timer != null) return;
-    timer = setInterval(() => {
-      nowTick.value = Date.now();
-    }, 1000);
-  }
-
-  function stopTick() {
-    if (timer != null) {
-      clearInterval(timer);
-      timer = null;
-    }
-  }
-
-  const cooldownActive = computed(() => {
-    const iso = nextAllowedFetchAtIso.value;
-    if (!iso) return false;
-    return parseUtcMs(iso) > nowTick.value;
-  });
-
-  watch(cooldownActive, (on) => {
-    if (on) startTick();
-    else stopTick();
-  });
 
   async function refresh(): Promise<PostNewsRefreshResult> {
     loading.value = true;
@@ -49,8 +51,6 @@ export function useNewsRefresh() {
       loading.value = false;
     }
   }
-
-  onUnmounted(stopTick);
 
   return { nextAllowedFetchAtIso, loading, refresh, cooldownActive };
 }
