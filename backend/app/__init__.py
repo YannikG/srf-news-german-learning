@@ -9,6 +9,7 @@ already-built app.
 
 from __future__ import annotations
 
+import os
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -28,6 +29,8 @@ from .words import words_bp
 def create_app(test_config: Mapping[str, Any] | None = None) -> Flask:
     app = Flask(__name__)
     app.config.setdefault("DATABASE_PATH", str(APP_DB_PATH))
+    app.config.setdefault("SIDECAR_BASE_URL", os.environ.get("SIDECAR_BASE_URL", ""))
+    app.config.setdefault("SIDECAR_SHARED_SECRET", os.environ.get("SIDECAR_SHARED_SECRET", ""))
 
     if test_config is not None:
         app.config.update(test_config)

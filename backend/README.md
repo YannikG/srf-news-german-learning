@@ -19,6 +19,7 @@ backend/
     settings/          # Einstellungen-API: routes, service, repository, ports, factory
     srg_oauth/         # SRG SSR OAuth2 Client Credentials (defaults, settings, client)
     srg_articles/      # Articles API v2: models, mapping, HTTP client (Bearer GET /articles)
+    sidecar/           # HTTP client for Docker sidecar (Ollama lifecycle); optional env below
   docs/
     architecture.md    # Schichtenmodell und Wiring
   tests/
@@ -150,3 +151,5 @@ The image is built by Compose at the repository root (see root `compose.yaml` an
 ```bash
 curl -fsS http://localhost:8000/api/health
 ```
+
+**Docker sidecar (Phase 4, P4-I01):** Compose sets `SIDECAR_BASE_URL` and `SIDECAR_SHARED_SECRET` on `web`. When `SIDECAR_BASE_URL` is non-empty, `GET /api/health` adds a `sidecar` field (`ok` / `error` against `GET …/ollama/inspect`). Local `pytest` leaves these unset unless a test passes `test_config`, so the default JSON stays `{"ok": true}`. API reference: [`docs/sidecar-api.md`](../docs/sidecar-api.md).

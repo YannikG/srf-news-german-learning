@@ -12,3 +12,4 @@ def test_health_returns_ok(client: FlaskClient) -> None:
     assert response.is_json
     payload = response.get_json()
     assert payload["ok"] is True
+    assert "sidecar" not in payload

@@ -1,0 +1,188 @@
+"""Minimal HTTP API to start, stop, and inspect the Ollama Compose service container."""
+
+from __future__ import annotations
+
+import logging
+import os
+import socket
+from typing import Any
+
+import docker
+from docker.errors import DockerException, NotFound
+from flask import Flask, jsonify, request
+
+logger = logging.getLogger(__name__)
+
+SIDECAR_TOKEN_HEADER = "X-Sidecar-Token"
+OLLAMA_SERVICE_LABEL = "com.docker.compose.service"
+OLLAMA_SERVICE_VALUE = "ollama"
+
+
+def _require_auth() -> tuple[Any, int] | None:
+    secret = (os.environ.get("SIDECAR_SHARED_SECRET") or "").strip()
+    if not secret:
+        return None
+    token = request.headers.get(SIDECAR_TOKEN_HEADER, "")
+    if token != secret:
+        return (
+            jsonify(error="unauthorized", detail="Missing or invalid X-Sidecar-Token"),
+            401,
+        )
+    return None
+
+
+def _docker_client() -> docker.DockerClient:
+    return docker.from_env()
+
+
+def _self_container(client: docker.DockerClient) -> docker.models.containers.Container | None:
+    hostname = socket.gethostname()
+    try:
+        return client.containers.get(hostname)
+    except NotFound:
+        return None
+    except DockerException:
+        logger.exception("Failed to resolve self container by hostname")
+        return None
+
+
+def _find_ollama_container(client: docker.DockerClient) -> docker.models.containers.Container | None:
+    """Pick the Ollama container that shares a Compose network with this sidecar."""
+    self_c = _self_container(client)
+    self_net_ids: set[str] = set()
+    if self_c is not None:
+        self_c.reload()
+        nets = self_c.attrs.get("NetworkSettings", {}).get("Networks") or {}
+        self_net_ids = set(nets.keys())
+
+    candidates: list[docker.models.containers.Container] = []
+    for c in client.containers.list(all=True):
+        labels = c.labels or {}
+        if labels.get(OLLAMA_SERVICE_LABEL) == OLLAMA_SERVICE_VALUE:
+            candidates.append(c)
+
+    if not candidates:
+        return None
+
+    if self_net_ids:
+        for c in candidates:
+            c.reload()
+            nets = c.attrs.get("NetworkSettings", {}).get("Networks") or {}
+            if self_net_ids.intersection(nets.keys()):
+                return c
+
+    project = (os.environ.get("DOCKER_COMPOSE_PROJECT") or "").strip()
+    if project:
+        for c in candidates:
+            labels = c.labels or {}
+            if labels.get("com.docker.compose.project") == project:
+                return c
+
+    if len(candidates) == 1:
+        return candidates[0]
+
+    return None
+
+
+def _container_summary(c: docker.models.containers.Container) -> dict[str, Any]:
+    c.reload()
+    state = (c.attrs.get("State") or {}).get("Status") or "unknown"
+    return {
+        "id": c.id,
+        "name": c.name,
+        "state": state,
+        "labels": {
+            "com.docker.compose.project": (c.labels or {}).get("com.docker.compose.project"),
+            "com.docker.compose.service": (c.labels or {}).get("com.docker.compose.service"),
+        },
+    }
+
+
+def create_app() -> Flask:
+    app = Flask(__name__)
+
+    @app.get("/health")
+    def health() -> tuple[Any, int]:
+        return jsonify(ok=True), 200
+
+    @app.before_request
+    def _auth() -> tuple[Any, int] | None:
+        if request.path == "/health":
+            return None
+        return _require_auth()
+
+    @app.get("/ollama/inspect")
+    def inspect_ollama() -> tuple[Any, int]:
+        try:
+            client = _docker_client()
+        except DockerException as e:
+            return jsonify(error="docker_unavailable", detail=str(e)), 503
+
+        try:
+            c = _find_ollama_container(client)
+        except DockerException as e:
+            logger.exception("Docker API error during inspect")
+            return jsonify(error="docker_error", detail=str(e)), 502
+
+        if c is None:
+            return jsonify(error="not_found", detail="No matching Ollama container found"), 404
+
+        return jsonify(ollama=_container_summary(c)), 200
+
+    @app.post("/ollama/start")
+    def start_ollama() -> tuple[Any, int]:
+        try:
+            client = _docker_client()
+        except DockerException as e:
+            return jsonify(error="docker_unavailable", detail=str(e)), 503
+
+        try:
+            c = _find_ollama_container(client)
+        except DockerException as e:
+            logger.exception("Docker API error during start")
+            return jsonify(error="docker_error", detail=str(e)), 502
+
+        if c is None:
+            return jsonify(error="not_found", detail="No matching Ollama container found"), 404
+
+        try:
+            c.reload()
+            state = (c.attrs.get("State") or {}).get("Status") or ""
+            if state != "running":
+                c.start()
+            c.reload()
+        except DockerException as e:
+            logger.exception("Failed to start Ollama container")
+            return jsonify(error="start_failed", detail=str(e)), 502
+
+        return jsonify(ok=True, ollama=_container_summary(c)), 200
+
+    @app.post("/ollama/stop")
+    def stop_ollama() -> tuple[Any, int]:
+        try:
+            client = _docker_client()
+        except DockerException as e:
+            return jsonify(error="docker_unavailable", detail=str(e)), 503
+
+        try:
+            c = _find_ollama_container(client)
+        except DockerException as e:
+            logger.exception("Docker API error during stop")
+            return jsonify(error="docker_error", detail=str(e)), 502
+
+        if c is None:
+            return jsonify(error="not_found", detail="No matching Ollama container found"), 404
+
+        try:
+            c.stop(timeout=30)
+            c.reload()
+        except DockerException as e:
+            logger.exception("Failed to stop Ollama container")
+            return jsonify(error="stop_failed", detail=str(e)), 502
+
+        return jsonify(ok=True, ollama=_container_summary(c)), 200
+
+    return app
+
+
+app = create_app()
