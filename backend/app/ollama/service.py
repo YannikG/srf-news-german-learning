@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 StopResult = tuple[bool, str | None]
 StopFn = Callable[[], StopResult]
 WarningListener = Callable[[], None]
+StateListener = Callable[[], None]
 
 
 class OllamaIdleService:
@@ -50,9 +51,32 @@ class OllamaIdleService:
         self._idle_epoch = 0
         self._lock = threading.Lock()
         self._warning_listeners: list[WarningListener] = []
+        self._state_listeners: list[StateListener] = []
 
     def add_warning_listener(self, fn: WarningListener) -> None:
         self._warning_listeners.append(fn)
+
+    def add_state_listener(self, fn: StateListener) -> None:
+        self._state_listeners.append(fn)
+
+    def sse_public_state(self) -> dict[str, object]:
+        """Snapshot safe for SSE clients (no secrets or sidecar URLs)."""
+        with self._lock:
+            return {
+                "idle_enabled": self._idle_enabled,
+                "refcount": self._refcount,
+                "idle_shutdown_armed": self._shutdown_deadline is not None,
+                "idle_warning_issued": self._warning_fired,
+            }
+
+    def _notify_state_observers(self) -> None:
+        with self._lock:
+            listeners = list(self._state_listeners)
+        for fn in listeners:
+            try:
+                fn()
+            except Exception:
+                logger.exception("Ollama idle state listener failed")
 
     @property
     def idle_enabled(self) -> bool:
@@ -64,6 +88,7 @@ class OllamaIdleService:
             self._refcount += 1
             self._shutdown_deadline = None
             self._warning_fired = False
+        self._notify_state_observers()
 
     def end_request(self) -> None:
         with self._lock:
@@ -72,6 +97,7 @@ class OllamaIdleService:
             self._refcount -= 1
             if self._refcount == 0 and self._idle_enabled:
                 self._arm_idle_unlocked(time.time())
+        self._notify_state_observers()
 
     def _arm_idle_unlocked(self, now: float) -> None:
         self._shutdown_deadline = now + self._idle
@@ -82,6 +108,7 @@ class OllamaIdleService:
             self._idle_epoch += 1
             self._shutdown_deadline = None
             self._warning_fired = False
+        self._notify_state_observers()
 
     def go_to_sleep(self) -> StopResult:
         """Stop Ollama immediately via ``stop_fn``; clears idle deadlines.
@@ -96,6 +123,7 @@ class OllamaIdleService:
             ok, err = self._stop_fn()
         if not ok:
             logger.warning("Ollama go-to-sleep stop failed: %s", err)
+        self._notify_state_observers()
         return ok, err
 
     def poll(self, now: float | None = None) -> None:
@@ -132,7 +160,13 @@ class OllamaIdleService:
             # block for tens of seconds; new callers wait until stop returns).
             with self._lock:
                 if self._refcount > 0 or self._idle_epoch != epoch_snapshot:
+                    self._notify_state_observers()
                     return
                 ok, err = self._stop_fn()
             if not ok:
                 logger.warning("Ollama idle shutdown stop failed: %s", err)
+            self._notify_state_observers()
+            return
+
+        if warning_callbacks:
+            self._notify_state_observers()
