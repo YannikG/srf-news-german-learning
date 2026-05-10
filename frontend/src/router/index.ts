@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import ArticleDetailView from '@/views/ArticleDetailView.vue';
 import DictionaryView from '@/views/DictionaryView.vue';
 import NewsView from '@/views/NewsView.vue';
+import SettingsView from '@/views/SettingsView.vue';
 import StubView from '@/views/StubView.vue';
 
 export const routes = [
@@ -22,6 +23,12 @@ export const routes = [
     name: 'dictionary',
     component: DictionaryView,
     meta: { title: 'Wörterbuch' },
+  },
+  {
+    path: '/einstellungen',
+    name: 'settings',
+    component: SettingsView,
+    meta: { title: 'Einstellungen' },
   },
   {
     path: '/stub',

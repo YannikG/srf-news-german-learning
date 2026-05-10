@@ -37,6 +37,13 @@ const { health, statusLine } = useApiHealthPoll();
           >
             Wörterbuch
           </RouterLink>
+          <RouterLink
+            to="/einstellungen"
+            class="rounded-md px-3 py-2 font-medium text-slate-700 hover:bg-slate-100"
+            active-class="bg-slate-200 text-slate-900"
+          >
+            Einstellungen
+          </RouterLink>
         </nav>
       </div>
     </header>
