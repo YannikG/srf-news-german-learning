@@ -150,7 +150,7 @@ function confirmDelete(row: Word) {
           Einträge bearbeiten, filtern und verwalten (lokale Datenbank).
         </p>
       </div>
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
         <div class="flex min-w-0 flex-col gap-1">
           <label class="text-xs font-medium text-slate-600" for="dict-category-filter"
             >Kategorie</label
@@ -206,7 +206,7 @@ function confirmDelete(row: Word) {
         </Column>
         <Column header="" style="width: 11rem" :exportable="false">
           <template #body="{ data }">
-            <div class="flex flex-wrap gap-1">
+            <div class="flex flex-wrap items-center gap-1">
               <Button
                 type="button"
                 label="Bearbeiten"
