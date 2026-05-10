@@ -57,12 +57,16 @@ class SseHub:
         self,
         *,
         initial_events_fn: Callable[[], list[tuple[str, dict[str, object]]]],
-        ping_interval_s: float = 25.0,
+        ping_interval_s: float = 15.0,
     ) -> Iterator[str]:
         """Yield SSE chunks for one client.
 
         ``initial_events_fn`` runs only after this client is subscribed so publishes
         between subscription and the first snapshot are not dropped.
+
+        ``ping_interval_s`` bounds time without yielding a ``: ping`` comment; keep it
+        below Gunicorn's sync worker ``timeout`` when ``timeout`` is not disabled, or
+        workers may be aborted mid-wait (``WORKER TIMEOUT``).
         """
         q = self.subscribe()
         try:
