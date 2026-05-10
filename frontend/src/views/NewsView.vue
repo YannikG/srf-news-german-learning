@@ -154,6 +154,15 @@ watch(
 async function onRefreshClick() {
   const r = await refresh();
   if (!r.ok) {
+    if (r.code === 'oauth_not_configured') {
+      toast.add({
+        severity: 'warn',
+        summary: 'SRG nicht konfiguriert',
+        detail: r.message,
+        life: 12000,
+      });
+      return;
+    }
     const summary =
       r.status === 429 || r.code === 'upstream_rate_limited'
         ? 'SRG Rate-Limit (429)'

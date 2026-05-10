@@ -262,6 +262,22 @@ def test_articles_429_is_user_friendly_json(tmp_path_factory: pytest.TempPathFac
     assert data.get("code") == "upstream_rate_limited"
 
 
+def test_refresh_without_oauth_env_returns_503_json(
+    tmp_path_factory: pytest.TempPathFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("SRGSSR_CONSUMER_KEY", raising=False)
+    monkeypatch.delenv("SRGSSR_CONSUMER_SECRET", raising=False)
+    db_path = tmp_path_factory.mktemp("no_oauth_env") / "app.db"
+    app = create_app({"TESTING": True, "DATABASE_PATH": str(db_path)})
+    r = app.test_client().post("/api/news/refresh")
+    assert r.status_code == 503
+    data = r.get_json()
+    assert isinstance(data, dict)
+    assert data.get("code") == "oauth_not_configured"
+    assert "error" in data
+
+
 def test_default_service_factory_builds(
     tmp_path_factory: pytest.TempPathFactory,
     monkeypatch: pytest.MonkeyPatch,

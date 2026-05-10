@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from flask import Blueprint, Response, current_app, jsonify
+from pydantic import ValidationError
 
 from .factory import build_default_news_refresh_service
 from .service import NewsRefreshError, NewsRefreshService
@@ -19,7 +20,15 @@ def _news_refresh_service() -> NewsRefreshService:
         return override  # type: ignore[no-any-return]
     cached = current_app.extensions.get(NEWS_REFRESH_SERVICE_EXT_KEY)
     if cached is None:
-        cached = build_default_news_refresh_service(current_app)
+        try:
+            cached = build_default_news_refresh_service(current_app)
+        except ValidationError as exc:
+            raise NewsRefreshError(
+                "SRG OAuth is not configured: set SRGSSR_CONSUMER_KEY and "
+                "SRGSSR_CONSUMER_SECRET in the environment.",
+                503,
+                code="oauth_not_configured",
+            ) from exc
         current_app.extensions[NEWS_REFRESH_SERVICE_EXT_KEY] = cached
     return cached  # type: ignore[no-any-return]
 
