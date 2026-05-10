@@ -98,6 +98,28 @@ def _container_summary(c: docker.models.containers.Container) -> dict[str, Any]:
     }
 
 
+def _get_ollama_or_error(
+    *,
+    log_context: str,
+) -> tuple[docker.models.containers.Container | None, tuple[Any, int] | None]:
+    """Resolve the Ollama container or return (None, (json_body, status_code))."""
+    try:
+        client = _docker_client()
+    except DockerException as e:
+        return None, (jsonify(error="docker_unavailable", detail=str(e)), 503)
+
+    try:
+        c = _find_ollama_container(client)
+    except DockerException as e:
+        logger.exception("Docker API error during %s", log_context)
+        return None, (jsonify(error="docker_error", detail=str(e)), 502)
+
+    if c is None:
+        return None, (jsonify(error="not_found", detail="No matching Ollama container found"), 404)
+
+    return c, None
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
 
@@ -113,37 +135,18 @@ def create_app() -> Flask:
 
     @app.get("/ollama/inspect")
     def inspect_ollama() -> tuple[Any, int]:
-        try:
-            client = _docker_client()
-        except DockerException as e:
-            return jsonify(error="docker_unavailable", detail=str(e)), 503
-
-        try:
-            c = _find_ollama_container(client)
-        except DockerException as e:
-            logger.exception("Docker API error during inspect")
-            return jsonify(error="docker_error", detail=str(e)), 502
-
-        if c is None:
-            return jsonify(error="not_found", detail="No matching Ollama container found"), 404
-
+        c, err = _get_ollama_or_error(log_context="inspect")
+        if err is not None:
+            return err
+        assert c is not None
         return jsonify(ollama=_container_summary(c)), 200
 
     @app.post("/ollama/start")
     def start_ollama() -> tuple[Any, int]:
-        try:
-            client = _docker_client()
-        except DockerException as e:
-            return jsonify(error="docker_unavailable", detail=str(e)), 503
-
-        try:
-            c = _find_ollama_container(client)
-        except DockerException as e:
-            logger.exception("Docker API error during start")
-            return jsonify(error="docker_error", detail=str(e)), 502
-
-        if c is None:
-            return jsonify(error="not_found", detail="No matching Ollama container found"), 404
+        c, err = _get_ollama_or_error(log_context="start")
+        if err is not None:
+            return err
+        assert c is not None
 
         try:
             c.reload()
@@ -159,19 +162,10 @@ def create_app() -> Flask:
 
     @app.post("/ollama/stop")
     def stop_ollama() -> tuple[Any, int]:
-        try:
-            client = _docker_client()
-        except DockerException as e:
-            return jsonify(error="docker_unavailable", detail=str(e)), 503
-
-        try:
-            c = _find_ollama_container(client)
-        except DockerException as e:
-            logger.exception("Docker API error during stop")
-            return jsonify(error="docker_error", detail=str(e)), 502
-
-        if c is None:
-            return jsonify(error="not_found", detail="No matching Ollama container found"), 404
+        c, err = _get_ollama_or_error(log_context="stop")
+        if err is not None:
+            return err
+        assert c is not None
 
         try:
             c.stop(timeout=30)

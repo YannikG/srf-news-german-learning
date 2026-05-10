@@ -68,10 +68,10 @@ curl -fsS -X POST -H "X-Sidecar-Token: dev-sidecar-secret" http://localhost:8090
 curl -fsS -X POST -H "X-Sidecar-Token: dev-sidecar-secret" http://localhost:8090/ollama/start
 ```
 
-From inside `web`:
+From inside `web` (the image is Alpine-based and does not ship `wget`; use Python like the container health check):
 
 ```bash
-docker compose exec web sh -c 'wget -qO- http://sidecar:8090/health'
+docker compose exec web python -c "import urllib.request; print(urllib.request.urlopen('http://sidecar:8090/health', timeout=5).read().decode())"
 ```
 
 ## Compose environment
