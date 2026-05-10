@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 from datetime import timedelta
 from pathlib import Path
@@ -168,6 +169,41 @@ def test_get_articles_does_not_call_srg_http(tmp_path_factory: pytest.TempPathFa
     r = client.get("/api/articles")
     assert r.status_code == 200
     assert calls == []
+
+
+def test_single_refresh_batch_upserts_two_distinct_articles(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    page = copy.deepcopy(_load_article_page_json())
+    second = copy.deepcopy(page["results"][0])
+    second["id"] = "urn:pdp:faro_srf:article:fixture-002"
+    second["identifiers"] = [{"value": second["id"], "type": "PdpId"}]
+    page["results"].append(second)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        u = str(request.url)
+        if request.method == "POST" and "accesstoken" in u:
+            return httpx.Response(200, json={"access_token": "tok", "expires_in": 300})
+        if request.method == "GET" and "/articles" in u:
+            return httpx.Response(200, json=page)
+        return httpx.Response(404, text=u)
+
+    app, db = _make_refresh_app(tmp_path_factory, handler)
+    r = app.test_client().post("/api/news/refresh")
+    assert r.status_code == 200
+    assert r.get_json()["articles_upserted"] == 2
+    ids = (
+        "urn:pdp:faro_srf:article:fixture-001",
+        "urn:pdp:faro_srf:article:fixture-002",
+    )
+    with db.begin() as conn:
+        n = conn.execute(
+            text(
+                "SELECT COUNT(*) AS c FROM articles WHERE external_id IN (:a, :b)",
+            ),
+            {"a": ids[0], "b": ids[1]},
+        ).scalar_one()
+    assert int(n) == 2
 
 
 def test_duplicate_external_id_is_idempotent(tmp_path_factory: pytest.TempPathFactory) -> None:
