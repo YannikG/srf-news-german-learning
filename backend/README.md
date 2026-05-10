@@ -32,6 +32,8 @@ backend/
 
 ## Local setup (relative to repo root)
 
+**Python:** Empfohlen 3.12 (wie CI und das Docker-Image). Paket ``eval-type-backport`` in ``requirements.txt`` hilft Pydantic unter 3.9 bei Feldtypen wie ``str | None``. Die discriminated Union der SRG-Ressourcenmodelle nutzt unter 3.9 ``typing.Union``, ab 3.10 den ``|``-Operator (gleiche Laufzeit wie in CI).
+
 ```bash
 python -m venv backend/.venv
 source backend/.venv/bin/activate

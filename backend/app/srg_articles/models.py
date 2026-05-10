@@ -1,4 +1,9 @@
-"""Pydantic models for a subset of the SRGSSR Articles API v2 JSON (OpenAPI aligned)."""
+"""Pydantic models for a subset of the SRGSSR Articles API v2 JSON (OpenAPI aligned).
+
+API keys stay camelCase in JSON; Python attributes use snake_case with ``Field(alias=...)``.
+``populate_by_name=True`` erlaubt Initialisierung mit Alias oder Feldnamen. Die Ressourcen-Union
+nutzt unter Python 3.10+ den ``|``-Operator (wie in CI); unter 3.9 ``typing.Union`` (Import).
+"""
 
 from __future__ import annotations
 
@@ -78,7 +83,7 @@ class LinkResource(BaseModel):
     name: str | None = None
 
 
-# Local dev may run Python < 3.10; ``A | B`` on model metaclasses fails there (ruff UP036).
+# Unter 3.9 schlägt ``Metaclass | Metaclass`` beim Import fehl; ab 3.10 wie in CI der ``|``-Zweig.
 if sys.version_info >= (3, 10):  # noqa: UP036
     _ResourceUnion = PictureResource | DocumentResource | LinkResource
 else:
