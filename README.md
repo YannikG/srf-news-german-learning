@@ -13,7 +13,7 @@ docker compose up -d
 docker compose down
 ```
 
-Services: `web` (Flask Backend, siehe [`backend/README.md`](backend/README.md)), `ollama`, `sidecar` (HTTP-API für Start/Stop/Inspect von Ollama über den Docker-Socket, nur im Sidecar). API und `curl`-Beispiele: [`docs/sidecar-api.md`](docs/sidecar-api.md). Der `web`-Service erhält `OLLAMA_BASE_URL` (Standard in `compose.yaml`: `http://ollama:11434` auf dem Compose-Netzwerk; überschreibbar mit Umgebungsvariable `OLLAMA_BASE_URL`). Persistentes benanntes Volume `app_data` ist unter `/data` im `web`-Container eingehängt; spätere Phasen legen dort `app.db` und `vectors.db` ab.
+Services: `web` (Flask-Backend plus gebautes Vue-Frontend im selben Image, siehe [`backend/README.md`](backend/README.md)), `ollama`, `sidecar` (HTTP-API für Start/Stop/Inspect von Ollama über den Docker-Socket, nur im Sidecar). API und `curl`-Beispiele: [`docs/sidecar-api.md`](docs/sidecar-api.md). Der `web`-Service erhält `OLLAMA_BASE_URL` (Standard in `compose.yaml`: `http://ollama:11434` auf dem Compose-Netzwerk; überschreibbar mit Umgebungsvariable `OLLAMA_BASE_URL`). Persistentes benanntes Volume `app_data` ist unter `/data` im `web`-Container eingehängt; spätere Phasen legen dort `app.db` und `vectors.db` ab.
 
 Health-Smoketest gegen den laufenden Stack:
 
@@ -24,9 +24,31 @@ curl -fsS http://localhost:8000/api/health
 
 Lokales Backend-Setup (venv, `requirements.txt`, Tests) ist in [`backend/README.md`](backend/README.md) dokumentiert.
 
+## Frontend (Vue, Vite)
+
+Quellcode unter [`frontend/`](frontend/README.md). Node **20** empfohlen (wie CI).
+
+Alle Vue-/Vite-Befehle im Ordner **`frontend/`** ausführen (`npm install` im Repo-Root richtet nur Husky/Prettier ein, nicht die Vue-Abhängigkeiten):
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+`npm run dev` startet den Vite-Dev-Server (Standardport 5173) und leitet `/api` an `http://127.0.0.1:8000` weiter. Flask muss dafür separat laufen (z. B. `docker compose up` oder lokales venv im `backend/`).
+
+```bash
+cd frontend
+npm run build
+npm test
+```
+
+Umgebungsvariablen: Beispiel [`frontend/.env.example`](frontend/.env.example). Optional `VITE_API_BASE_URL` für eine absolute API-Origin; leer bleibt gleiche Origin (Compose-`web` oder Proxy).
+
 ## Linting und Formatierung
 
-Statische Checks laufen in GitHub Actions (Workflow [`.github/workflows/quality.yml`](.github/workflows/quality.yml)) bei jedem Pull Request und bei jedem Push auf `master`.
+Statische Checks laufen in GitHub Actions (Workflow [`.github/workflows/quality.yml`](.github/workflows/quality.yml)) bei jedem Pull Request und bei jedem Push auf `master` (Jobs Backend Ruff, Backend pytest, Frontend mit Prettier, Vite-Build und Vitest).
 
 **Python (Ruff):** Backend-venv wie im [`backend/README.md`](backend/README.md) anlegen und in der Shell aktivieren. Anschliessend:
 

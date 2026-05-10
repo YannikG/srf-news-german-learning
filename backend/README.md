@@ -126,7 +126,7 @@ flask --app wsgi init-vectors-db
 
 **Phase-2 layers:** API integration tests use Flask's test client (`client` in `tests/conftest.py`) against a temporary SQLite database; schema and migration tests assert SQL and the migration runner; small unit tests target pure helpers (for example migration bookkeeping validation) without HTTP.
 
-**CI:** the same suite runs in GitHub Actions in [`.github/workflows/quality.yml`](../.github/workflows/quality.yml) under the job **Backend (pytest)** on pull requests and on pushes to `master` (Python 3.12, `pip install -r requirements.txt` and `-r requirements-dev.txt`, then `pytest` in `backend/`). No external services are required for the default test run.
+**CI:** the same suite runs in GitHub Actions in [`.github/workflows/quality.yml`](../.github/workflows/quality.yml) under the job **Backend (pytest)** on pull requests and on pushes to `master` (Python 3.12, `pip install -r requirements.txt` and `-r requirements-dev.txt`, then `pytest` in `backend/`). The **Frontend** job in that workflow runs `npm ci`, `npm run build`, and `npm test` under `frontend/` plus root Prettier. No external services are required for the default test run.
 
 Run locally from the **repository root** (parent of `backend/`) so `cd backend` is correct; then `pytest` picks up `pyproject.toml` and the `app` package.
 
@@ -156,7 +156,13 @@ Zum Anwenden der Formatter-Ausgabe: `ruff format app tests wsgi.py`. Der Pre-Com
 
 ## Docker
 
-The image is built by Compose at the repository root (see root `compose.yaml` and the root `README.md`). The backend image is **Debian slim (glibc)** so the ``sqlite-vec`` wheel from PyPI loads; Alpine/musl is not used here. After `docker compose up -d` the same endpoint is reachable on the mapped port:
+The `web` image is built from the **repository root** (`compose.yaml` uses `context: .` and `dockerfile: backend/Dockerfile`). A **Node** stage runs `npm ci` and `npm run build` in `frontend/`, then copies `dist/` into `app/static/spa/` inside the Python image. Flask serves `GET /` and client-side routes when `index.html` is present there; `/api/*` is unchanged.
+
+The image entrypoint (`docker-entrypoint-web.sh`) ensures the Compose volume mount **`/data`** is writable by the non-root app user before starting Gunicorn (named volumes are often root-owned on first mount).
+
+Override the on-disk SPA directory with **`STATIC_SPA_DIR`** (absolute path). When `index.html` is missing (typical local `pytest` tree), no SPA routes are registered and `GET /` returns `404`.
+
+The runtime image is **Debian slim (glibc)** so the ``sqlite-vec`` wheel from PyPI loads; Alpine/musl is not used here. After `docker compose up -d` the health endpoint is reachable on the mapped port:
 
 ```bash
 curl -fsS http://localhost:8000/api/health
