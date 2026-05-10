@@ -6,13 +6,15 @@ app-level SQLite helper should run the same pragma on each new connection.
 
 from __future__ import annotations
 
-import re
 import sqlite3
 from pathlib import Path
 
+from .migration_bookkeeping import (
+    migration_bookkeeping_insert_sql,
+    read_applied_migration_ids,
+)
+
 _SQL_DIR = Path(__file__).resolve().parent / "sql"
-# Stems only; used to build a single-quoted SQL literal after validation.
-_MIGRATION_ID_PATTERN = re.compile(r"^[0-9]{3}_[a-zA-Z0-9_]+$")
 
 
 def migration_sql_files() -> list[tuple[str, Path]]:
@@ -22,27 +24,6 @@ def migration_sql_files() -> list[tuple[str, Path]]:
 
 
 MIGRATION_IDS: tuple[str, ...] = tuple(mid for mid, _ in migration_sql_files())
-
-
-def _assert_migration_id_safe(migration_id: str) -> None:
-    if not _MIGRATION_ID_PATTERN.fullmatch(migration_id):
-        msg = f"migration_id must match {_MIGRATION_ID_PATTERN.pattern}, got {migration_id!r}"
-        raise ValueError(msg)
-
-
-def _migration_bookkeeping_sql(migration_id: str) -> str:
-    _assert_migration_id_safe(migration_id)
-    escaped = migration_id.replace("'", "''")
-    return f"INSERT INTO _migrations (migration_id) VALUES ('{escaped}');\n"
-
-
-def _applied_migration_ids(conn: sqlite3.Connection) -> set[str]:
-    cur = conn.execute(
-        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = '_migrations'",
-    )
-    if cur.fetchone() is None:
-        return set()
-    return {row[0] for row in conn.execute("SELECT migration_id FROM _migrations")}
 
 
 def apply_migrations(conn: sqlite3.Connection) -> list[str]:
@@ -56,13 +37,13 @@ def apply_migrations(conn: sqlite3.Connection) -> list[str]:
     order are attempted. Already-completed migrations in this run stay committed.
     """
     conn.execute("PRAGMA foreign_keys = ON")
-    applied = _applied_migration_ids(conn)
+    applied = read_applied_migration_ids(conn)
     ran: list[str] = []
     for migration_id, sql_path in migration_sql_files():
         if migration_id in applied:
             continue
         body = sql_path.read_text(encoding="utf-8").rstrip()
-        script = f"{body}\n{_migration_bookkeeping_sql(migration_id)}"
+        script = f"{body}\n{migration_bookkeeping_insert_sql(migration_id)}"
         try:
             conn.executescript(script)
         except sqlite3.Error:
@@ -71,3 +52,7 @@ def apply_migrations(conn: sqlite3.Connection) -> list[str]:
         applied.add(migration_id)
         ran.append(migration_id)
     return ran
+
+
+# Backwards-compatible names for tests and callers that imported private helpers.
+_migration_bookkeeping_sql = migration_bookkeeping_insert_sql
