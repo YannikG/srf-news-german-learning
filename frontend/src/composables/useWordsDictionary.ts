@@ -2,6 +2,13 @@ import { ref, watch } from 'vue';
 import { createWord, deleteWord, listWords, patchWord } from '@/api/wordsApi';
 import type { Word, WordCreatePayload, WordPatchPayload } from '@/types/word';
 
+function trimCategoryFilter(value: unknown): string {
+  if (value == null || typeof value !== 'string') {
+    return '';
+  }
+  return value.trim();
+}
+
 function mergeKnownCategories(existing: string[], words: Word[]): string[] {
   const set = new Set(existing);
   for (const w of words) {
@@ -31,9 +38,8 @@ export function useWordsDictionary() {
     loading.value = true;
     error.value = null;
     try {
-      const res = await listWords(
-        categoryFilter.value.trim() ? { category: categoryFilter.value.trim() } : {}
-      );
+      const filter = trimCategoryFilter(categoryFilter.value);
+      const res = await listWords(filter ? { category: filter } : {});
       if (seq !== loadRequestSeq) {
         return;
       }
@@ -67,7 +73,7 @@ export function useWordsDictionary() {
     }
     knownCategories.value = mergeKnownCategories(knownCategories.value, [res.data]);
     const newCat = res.data.category.trim();
-    const filter = categoryFilter.value.trim();
+    const filter = trimCategoryFilter(categoryFilter.value);
     if (filter && newCat !== filter) {
       categoryFilter.value = '';
       return { ok: true };
@@ -86,7 +92,7 @@ export function useWordsDictionary() {
     }
     knownCategories.value = mergeKnownCategories(knownCategories.value, [res.data]);
     const newCat = res.data.category.trim();
-    const filter = categoryFilter.value.trim();
+    const filter = trimCategoryFilter(categoryFilter.value);
     if (filter && newCat !== filter) {
       categoryFilter.value = '';
       return { ok: true };

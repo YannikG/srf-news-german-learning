@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AutoComplete from 'primevue/autocomplete';
 import Button from 'primevue/button';
 import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
@@ -9,7 +10,7 @@ import Select from 'primevue/select';
 import Textarea from 'primevue/textarea';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
-import { computed, reactive, ref } from 'vue';
+import { reactive, ref } from 'vue';
 import { useWordsDictionary } from '@/composables/useWordsDictionary';
 import type { Word, WordDifficulty } from '@/types/word';
 import { WORD_DIFFICULTIES } from '@/types/word';
@@ -34,10 +35,24 @@ const saveInFlight = ref(false);
 
 const difficultySelectOptions = WORD_DIFFICULTIES.map((d) => ({ label: d, value: d }));
 
-const categoryFilterOptions = computed(() => [
-  { label: 'Alle', value: '' },
-  ...knownCategories.value.map((c) => ({ label: c, value: c })),
-]);
+const toolbarCategorySuggestions = ref<string[]>([]);
+const dialogCategorySuggestions = ref<string[]>([]);
+
+function filterCategorySuggestions(query: string, source: readonly string[]): string[] {
+  const q = query.trim().toLowerCase();
+  if (!q) {
+    return [...source];
+  }
+  return source.filter((c) => c.toLowerCase().includes(q));
+}
+
+function onToolbarCategoryComplete(event: { query: string }) {
+  toolbarCategorySuggestions.value = filterCategorySuggestions(event.query, knownCategories.value);
+}
+
+function onDialogCategoryComplete(event: { query: string }) {
+  dialogCategorySuggestions.value = filterCategorySuggestions(event.query, knownCategories.value);
+}
 
 function resetForm() {
   form.german_label = '';
@@ -152,17 +167,21 @@ function confirmDelete(row: Word) {
       </div>
       <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
         <div class="flex min-w-0 flex-col gap-1">
-          <label class="text-xs font-medium text-slate-600" for="dict-category-filter"
+          <label class="text-xs font-medium text-slate-600" for="dict-category-filter-input"
             >Kategorie</label
           >
-          <Select
-            id="dict-category-filter"
+          <AutoComplete
             v-model="categoryFilter"
-            :options="categoryFilterOptions"
-            option-label="label"
-            option-value="value"
-            placeholder="Alle"
+            input-id="dict-category-filter-input"
+            :suggestions="toolbarCategorySuggestions"
             class="w-full min-w-[12rem] sm:w-56"
+            placeholder="Alle oder Kategorie wählen"
+            :dropdown="true"
+            :min-length="0"
+            :force-selection="false"
+            :show-clear="true"
+            complete-on-focus
+            @complete="onToolbarCategoryComplete"
           />
         </div>
         <Button type="button" label="Neues Wort" class="shrink-0" @click="openCreate" />
@@ -243,8 +262,20 @@ function confirmDelete(row: Word) {
           <p v-if="labelError" class="text-sm text-red-600">{{ labelError }}</p>
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-xs font-medium text-slate-700" for="wf-cat">Kategorie</label>
-          <InputText id="wf-cat" v-model="form.category" class="w-full" autocomplete="off" />
+          <label class="text-xs font-medium text-slate-700" for="wf-cat-input">Kategorie</label>
+          <AutoComplete
+            v-model="form.category"
+            input-id="wf-cat-input"
+            :suggestions="dialogCategorySuggestions"
+            class="w-full"
+            placeholder="Bestehende wählen oder neue eingeben"
+            :dropdown="true"
+            :min-length="0"
+            :force-selection="false"
+            :show-clear="true"
+            complete-on-focus
+            @complete="onDialogCategoryComplete"
+          />
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-xs font-medium text-slate-700" for="wf-diff">Schwierigkeit</label>
