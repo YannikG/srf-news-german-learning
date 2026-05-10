@@ -36,7 +36,14 @@ async function onCancelShutdown() {
       detail: r.message ?? 'Unbekannter Fehler',
       life: 6000,
     });
+    return;
   }
+  toast.add({
+    severity: 'success',
+    summary: 'Automatischer Stopp abgebrochen',
+    detail: 'Ollama bleibt vorerst aktiv.',
+    life: 4000,
+  });
 }
 
 async function onGoToSleep() {
@@ -48,7 +55,14 @@ async function onGoToSleep() {
       detail: r.message ?? 'Ollama konnte nicht gestoppt werden.',
       life: 6000,
     });
+    return;
   }
+  toast.add({
+    severity: 'success',
+    summary: 'Ruhezustand',
+    detail: 'Ollama wurde gestoppt.',
+    life: 4000,
+  });
 }
 </script>
 
