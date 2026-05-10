@@ -182,3 +182,20 @@ def test_simplify_incomplete_stream_raises(
     )
     with pytest.raises(ArticleSimplifyServiceError, match="prematurely"):
         svc.simplify_article(1, "B1")
+
+
+def test_extract_json_object_uses_raw_decode_for_braces_in_strings() -> None:
+    from app.articles.simplify_service import _extract_json_object
+
+    inner = {
+        "markdown": "Text with } and { inside",
+        "used_word_ids": [],
+        "suggestions": [
+            {"german_label": "eins", "translation": "", "category": "t"},
+            {"german_label": "zwei", "translation": "", "category": "t"},
+            {"german_label": "drei", "translation": "", "category": "t"},
+        ],
+    }
+    payload = json.dumps(inner, ensure_ascii=False)
+    extracted = _extract_json_object(f"prefix\n{payload}\ntrailing prose")
+    assert json.loads(extracted)["markdown"] == "Text with } and { inside"

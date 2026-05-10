@@ -8,6 +8,7 @@ from collections.abc import Iterator
 from typing import Any, Protocol
 
 from pydantic import ValidationError
+from sqlalchemy.exc import SQLAlchemyError
 
 from ..ollama.chat_stream import OllamaChatStreamError, OllamaChatStreamIncompleteError
 from ..ollama.service import OllamaIdleService
@@ -42,7 +43,11 @@ class ArticleSimplifyServiceError(Exception):
 
 
 def _extract_json_object(raw: str) -> str:
-    """Take the outermost JSON object from model text, tolerating a fenced block."""
+    """Take the first JSON object from model text, tolerating a fenced block.
+
+    Uses :meth:`json.JSONDecoder.raw_decode` so braces inside JSON strings do not
+    truncate the payload (unlike a naive ``rfind('}')`` slice).
+    """
     text = raw.strip()
     if text.startswith("```"):
         lines = text.splitlines()
@@ -53,10 +58,14 @@ def _extract_json_object(raw: str) -> str:
             inner.pop()
         text = "\n".join(inner).strip()
     start = text.find("{")
-    end = text.rfind("}")
-    if start == -1 or end == -1 or end <= start:
+    if start == -1:
         raise ArticleSimplifyServiceError("LLM response did not contain a JSON object", 502)
-    return text[start : end + 1]
+    decoder = json.JSONDecoder()
+    try:
+        _, end = decoder.raw_decode(text, start)
+    except json.JSONDecodeError as exc:
+        raise ArticleSimplifyServiceError("LLM response is not valid JSON", 502) from exc
+    return text[start:end]
 
 
 def _build_prompts(
@@ -191,30 +200,30 @@ class ArticleSimplifyService:
         allowed_ids = self._words.ids_in_lexicon(parsed.used_word_ids)
         used_ordered = [wid for wid in parsed.used_word_ids if wid in allowed_ids]
 
-        suggested_ids: list[int] = []
-        try:
-            for suggestion in parsed.suggestions:
-                created = self._words.create(
-                    german_label=suggestion.german_label,
-                    category=suggestion.category.strip() or "suggestion",
-                    difficulty="Neu",
-                    translation=suggestion.translation.strip(),
-                    cefr_level=cefr_level,
-                )
-                suggested_ids.append(int(created["id"]))
-        except (TypeError, ValueError, KeyError) as exc:
-            raise ArticleSimplifyServiceError("Failed to persist suggested words", 500) from exc
+        new_word_rows: list[dict[str, str | None]] = []
+        for suggestion in parsed.suggestions:
+            new_word_rows.append(
+                {
+                    "german_label": suggestion.german_label,
+                    "category": suggestion.category.strip() or "suggestion",
+                    "difficulty": "Neu",
+                    "translation": suggestion.translation.strip(),
+                    "cefr_level": cefr_level,
+                },
+            )
 
         try:
-            sid = self._simplify_repo.replace_simplification(
+            sid, suggested_ids = self._simplify_repo.replace_simplification_with_new_words(
                 article_id=article_id,
                 cefr_level=cefr_level,
                 markdown_simplified=markdown_clean,
                 used_word_ids=used_ordered,
-                suggested_word_ids=suggested_ids,
+                new_words=new_word_rows,
             )
-        except Exception as exc:  # noqa: BLE001 — surface DB errors as 500
+        except SQLAlchemyError as exc:
             logger.exception("Simplify persistence failed")
+            raise ArticleSimplifyServiceError("Failed to persist simplification", 500) from exc
+        except (TypeError, ValueError, KeyError) as exc:
             raise ArticleSimplifyServiceError("Failed to persist simplification", 500) from exc
 
         for wid in suggested_ids:

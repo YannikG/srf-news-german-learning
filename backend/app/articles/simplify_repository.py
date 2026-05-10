@@ -8,6 +8,10 @@ from sqlalchemy import text
 
 from ..persistence.sqlite_db import SqlDatabase
 
+_WORD_RETURNING = (
+    "id, german_label, category, difficulty, translation, cefr_level, created_at, updated_at"
+)
+
 
 class SqliteArticleSimplifyRepository:
     """Writes ``article_simplifications`` and related junction rows."""
@@ -15,17 +19,44 @@ class SqliteArticleSimplifyRepository:
     def __init__(self, db: SqlDatabase) -> None:
         self._db = db
 
-    def replace_simplification(
+    def replace_simplification_with_new_words(
         self,
         *,
         article_id: int,
         cefr_level: str,
         markdown_simplified: str,
         used_word_ids: list[int],
-        suggested_word_ids: list[int],
-    ) -> int:
-        """Upsert simplification row, replace junctions, link suggested words to the article."""
+        new_words: list[dict[str, str | None]],
+    ) -> tuple[int, list[int]]:
+        """Insert suggestion words, upsert simplification, junctions, in one transaction.
+
+        Returns ``(simplification_id, new_word_ids)`` in insertion order for ``new_words``.
+        """
         with self._db.begin() as conn:
+            suggested_word_ids: list[int] = []
+            for nw in new_words:
+                wrow = (
+                    conn.execute(
+                        text(
+                            "INSERT INTO words "
+                            "(german_label, category, difficulty, translation, cefr_level) "
+                            "VALUES (:german_label, :category, :difficulty, :translation, "
+                            ":cefr_level) "
+                            f"RETURNING {_WORD_RETURNING}",
+                        ),
+                        {
+                            "german_label": nw["german_label"],
+                            "category": nw["category"],
+                            "difficulty": nw["difficulty"],
+                            "translation": nw["translation"],
+                            "cefr_level": nw["cefr_level"],
+                        },
+                    )
+                    .mappings()
+                    .one()
+                )
+                suggested_word_ids.append(int(wrow["id"]))
+
             row = (
                 conn.execute(
                     text(
@@ -87,7 +118,7 @@ class SqliteArticleSimplifyRepository:
                     {"aid": article_id, "wid": wid},
                 )
 
-            return sid
+            return sid, suggested_word_ids
 
     def get_simplification(
         self,
