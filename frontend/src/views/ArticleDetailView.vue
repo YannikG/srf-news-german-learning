@@ -2,6 +2,7 @@
 import SelectButton from 'primevue/selectbutton';
 import ProgressSpinner from 'primevue/progressspinner';
 import { computed, onUnmounted, ref, watch } from 'vue';
+import type { RouteLocationRaw } from 'vue-router';
 import { useRoute } from 'vue-router';
 import { fetchArticleDetail } from '@/api/fetchArticles';
 import type { ArticleDetail } from '@/types/article';
@@ -34,6 +35,19 @@ const bodyMarkdown = computed(() => {
 
 const bodyHtml = computed(() =>
   bodyMarkdown.value ? renderArticleMarkdown(bodyMarkdown.value) : ''
+);
+
+/** Single ISO date for list deep-link (avoids passing ``string[]`` from duplicate query keys). */
+const newsListDateParam = computed((): string | null => {
+  const d = route.query.d;
+  const raw = Array.isArray(d) ? d[0] : d;
+  if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
+  return raw;
+});
+
+const backToNewsRoute = computed(
+  (): RouteLocationRaw =>
+    newsListDateParam.value ? { path: '/', query: { d: newsListDateParam.value } } : '/'
 );
 
 /** Ignores stale detail responses when the route id changes quickly. */
@@ -86,10 +100,7 @@ onUnmounted(() => {
 <template>
   <article class="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 sm:px-6">
     <div class="flex flex-wrap items-center gap-2">
-      <RouterLink
-        :to="route.query.d ? { path: '/', query: { d: route.query.d } } : '/'"
-        class="text-sm font-medium text-sky-800 hover:underline"
-      >
+      <RouterLink :to="backToNewsRoute" class="text-sm font-medium text-sky-800 hover:underline">
         Zurück zur News
       </RouterLink>
     </div>
