@@ -297,6 +297,14 @@ def test_build_lexicon_retrieval_service_wires_from_app(app) -> None:
     assert isinstance(svc, LexiconRetrievalService)
 
 
+def test_build_lexicon_retrieval_service_is_singleton_per_app(app) -> None:
+    from app.retrieval.factory import build_lexicon_retrieval_service
+
+    first = build_lexicon_retrieval_service(app)
+    second = build_lexicon_retrieval_service(app)
+    assert first is second
+
+
 def test_build_lexicon_retrieval_service_requires_ollama_base_url(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> None:

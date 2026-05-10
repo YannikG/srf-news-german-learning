@@ -7,16 +7,13 @@ from unittest.mock import MagicMock, patch
 from app.sidecar.client import post_ollama_start
 
 
-@patch("app.sidecar.client.httpx.Client")
-def test_post_ollama_start_success(mock_client_class: MagicMock) -> None:
+@patch("app.sidecar.client._sidecar_http")
+def test_post_ollama_start_success(mock_sidecar_http: MagicMock) -> None:
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_http = MagicMock()
     mock_http.post.return_value = mock_response
-    mock_ctx = MagicMock()
-    mock_ctx.__enter__.return_value = mock_http
-    mock_ctx.__exit__.return_value = False
-    mock_client_class.return_value = mock_ctx
+    mock_sidecar_http.return_value = mock_http
 
     ok, err = post_ollama_start("http://sidecar:8090", "secret")
 
@@ -28,17 +25,14 @@ def test_post_ollama_start_success(mock_client_class: MagicMock) -> None:
     assert kwargs["headers"]["X-Sidecar-Token"] == "secret"
 
 
-@patch("app.sidecar.client.httpx.Client")
-def test_post_ollama_start_failure(mock_client_class: MagicMock) -> None:
+@patch("app.sidecar.client._sidecar_http")
+def test_post_ollama_start_failure(mock_sidecar_http: MagicMock) -> None:
     mock_response = MagicMock()
     mock_response.status_code = 503
     mock_response.text = "busy"
     mock_http = MagicMock()
     mock_http.post.return_value = mock_response
-    mock_ctx = MagicMock()
-    mock_ctx.__enter__.return_value = mock_http
-    mock_ctx.__exit__.return_value = False
-    mock_client_class.return_value = mock_ctx
+    mock_sidecar_http.return_value = mock_http
 
     ok, err = post_ollama_start("http://sidecar:8090", None)
 

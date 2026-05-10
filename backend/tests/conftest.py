@@ -14,6 +14,15 @@ from app.persistence.sqlite_db import SqlDatabase
 from app.persistence.vectors_db import VectorsDatabase
 
 
+@pytest.fixture(autouse=True)
+def _reset_sidecar_http_client_after_test() -> Generator[None, None, None]:
+    """Avoid cross-test pollution from the process-wide sidecar ``httpx`` client."""
+    yield
+    from app.sidecar.client import reset_shared_sidecar_http_client
+
+    reset_shared_sidecar_http_client()
+
+
 @pytest.fixture()
 def app(tmp_path_factory: pytest.TempPathFactory) -> Generator[Flask, None, None]:
     db_path = tmp_path_factory.mktemp("db") / "app.db"

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, TypeVar
 
 from ..ollama.embeddings import OllamaEmbedClient, OllamaEmbedError
 from ..ollama.service import OllamaIdleService
@@ -15,6 +15,8 @@ from .errors import RetrievalServiceError
 DEFAULT_RETRIEVAL_TOP_K = 20
 DEFAULT_RETRIEVAL_CONTEXT_MAX_CHARS = 8192
 KNN_FETCH_CAP = 500
+
+_TSession = TypeVar("_TSession")
 
 
 def _coerce_positive_int(raw: Any, *, default: int) -> int:
@@ -116,7 +118,7 @@ class LexiconRetrievalService:
             msg = err or "unknown error"
             raise RetrievalServiceError(f"Sidecar Ollama start failed: {msg}")
 
-    def _run_tracked_ollama_session[T](self, work: Callable[[], T]) -> T:
+    def _run_tracked_ollama_session(self, work: Callable[[], _TSession]) -> _TSession:
         self._ensure_ollama_container()
         idle = self._idle
         if idle is not None:
