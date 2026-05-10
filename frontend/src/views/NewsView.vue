@@ -230,13 +230,13 @@ async function onTouchEnd() {
         <h2 class="text-lg font-semibold text-slate-800 sm:text-xl">News</h2>
         <p class="text-xs text-slate-500">Timeline aus der lokalen Datenbank</p>
       </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <label class="flex flex-col text-xs font-medium text-slate-600">
+      <div class="flex flex-wrap items-end gap-2">
+        <label class="flex flex-col gap-1 text-xs font-medium text-slate-600">
           Datum
           <input
             v-model="selectedDate"
             type="date"
-            class="mt-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 shadow-sm"
+            class="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 shadow-sm"
           />
         </label>
         <Button
