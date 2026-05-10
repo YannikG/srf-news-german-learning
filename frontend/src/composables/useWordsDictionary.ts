@@ -20,14 +20,19 @@ export function useWordsDictionary() {
   const error = ref<string | null>(null);
   const categoryFilter = ref('');
   const knownCategories = ref<string[]>([]);
+  let loadRequestSeq = 0;
 
   async function load(): Promise<void> {
+    const seq = ++loadRequestSeq;
     loading.value = true;
     error.value = null;
     try {
       const res = await listWords(
         categoryFilter.value.trim() ? { category: categoryFilter.value.trim() } : {}
       );
+      if (seq !== loadRequestSeq) {
+        return;
+      }
       if (!res.ok) {
         error.value = res.message;
         return;
@@ -35,7 +40,9 @@ export function useWordsDictionary() {
       items.value = res.data;
       knownCategories.value = mergeKnownCategories(knownCategories.value, res.data);
     } finally {
-      loading.value = false;
+      if (seq === loadRequestSeq) {
+        loading.value = false;
+      }
     }
   }
 

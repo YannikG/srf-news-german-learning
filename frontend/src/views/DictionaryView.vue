@@ -30,6 +30,7 @@ const form = reactive({
   cefr_level: '',
 });
 const labelError = ref<string | null>(null);
+const saveInFlight = ref(false);
 
 const difficultySelectOptions = WORD_DIFFICULTIES.map((d) => ({ label: d, value: d }));
 
@@ -75,6 +76,9 @@ function formatTs(iso: string): string {
 }
 
 async function saveDialog() {
+  if (saveInFlight.value) {
+    return;
+  }
   const trimmed = form.german_label.trim();
   if (!trimmed) {
     labelError.value = 'Deutschbezeichnung darf nicht leer sein.';
@@ -82,34 +86,39 @@ async function saveDialog() {
   }
   labelError.value = null;
   const cefr = form.cefr_level.trim() || null;
-  if (editingId.value == null) {
-    const res = await create({
-      german_label: trimmed,
-      category: form.category.trim(),
-      translation: form.translation.trim(),
-      difficulty: form.difficulty,
-      cefr_level: cefr,
-    });
-    if (!res.ok) {
-      toast.add({ severity: 'error', summary: 'Speichern', detail: res.message, life: 6000 });
-      return;
+  saveInFlight.value = true;
+  try {
+    if (editingId.value == null) {
+      const res = await create({
+        german_label: trimmed,
+        category: form.category.trim(),
+        translation: form.translation.trim(),
+        difficulty: form.difficulty,
+        cefr_level: cefr,
+      });
+      if (!res.ok) {
+        toast.add({ severity: 'error', summary: 'Speichern', detail: res.message, life: 6000 });
+        return;
+      }
+      toast.add({ severity: 'success', summary: 'Wort angelegt', life: 3000 });
+    } else {
+      const res = await update(editingId.value, {
+        german_label: trimmed,
+        category: form.category.trim(),
+        translation: form.translation.trim(),
+        difficulty: form.difficulty,
+        cefr_level: cefr,
+      });
+      if (!res.ok) {
+        toast.add({ severity: 'error', summary: 'Speichern', detail: res.message, life: 6000 });
+        return;
+      }
+      toast.add({ severity: 'success', summary: 'Wort aktualisiert', life: 3000 });
     }
-    toast.add({ severity: 'success', summary: 'Wort angelegt', life: 3000 });
-  } else {
-    const res = await update(editingId.value, {
-      german_label: trimmed,
-      category: form.category.trim(),
-      translation: form.translation.trim(),
-      difficulty: form.difficulty,
-      cefr_level: cefr,
-    });
-    if (!res.ok) {
-      toast.add({ severity: 'error', summary: 'Speichern', detail: res.message, life: 6000 });
-      return;
-    }
-    toast.add({ severity: 'success', summary: 'Wort aktualisiert', life: 3000 });
+    dialogVisible.value = false;
+  } finally {
+    saveInFlight.value = false;
   }
-  dialogVisible.value = false;
 }
 
 function confirmDelete(row: Word) {
@@ -264,7 +273,13 @@ function confirmDelete(row: Word) {
           severity="secondary"
           @click="dialogVisible = false"
         />
-        <Button type="button" label="Speichern" @click="saveDialog" />
+        <Button
+          type="button"
+          label="Speichern"
+          :loading="saveInFlight"
+          :disabled="saveInFlight"
+          @click="saveDialog"
+        />
       </template>
     </Dialog>
   </div>

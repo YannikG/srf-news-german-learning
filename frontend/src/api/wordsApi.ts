@@ -24,8 +24,11 @@ export async function listWords(params: { category?: string }): Promise<ListWord
       }
       return { ok: false, status: res.status, message };
     }
-    const data = (await res.json()) as Word[];
-    return { ok: true, data };
+    const raw: unknown = await res.json();
+    if (!Array.isArray(raw)) {
+      return { ok: false, status: res.status, message: 'Ungültige Antwort vom Server' };
+    }
+    return { ok: true, data: raw as Word[] };
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Netzwerkfehler';
     return { ok: false, status: 0, message };
