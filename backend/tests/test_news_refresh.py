@@ -12,6 +12,7 @@ from freezegun import freeze_time
 from sqlalchemy import text
 
 from app import create_app
+from app.news.constants import LAST_SUCCESSFUL_FETCH_METADATA_KEY
 from app.news.factory import build_default_news_refresh_service
 from app.news.routes import NEWS_REFRESH_SERVICE_CONFIG_KEY
 from app.news.service import NewsRefreshService
@@ -53,6 +54,38 @@ def _make_refresh_app(tmp_path_factory: pytest.TempPathFactory, handler) -> tupl
     service = NewsRefreshService(db, oauth, articles)
     application.config[NEWS_REFRESH_SERVICE_CONFIG_KEY] = service
     return application, db
+
+
+def test_corrupt_last_fetch_metadata_does_not_block_refresh(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    page = _load_article_page_json()
+    article_requests: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        u = str(request.url)
+        if request.method == "POST" and "accesstoken" in u:
+            return httpx.Response(200, json={"access_token": "tok", "expires_in": 300})
+        if request.method == "GET" and "/articles" in u:
+            article_requests.append(u)
+            return httpx.Response(200, json=page)
+        return httpx.Response(404, text=u)
+
+    app, db = _make_refresh_app(tmp_path_factory, handler)
+    with db.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO srg_sync_metadata (key, value) VALUES (:k, :v) "
+                "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            ),
+            {"k": LAST_SUCCESSFUL_FETCH_METADATA_KEY, "v": "not-a-valid-timestamp"},
+        )
+    client = app.test_client()
+    with freeze_time("2024-08-01T12:00:00+00:00"):
+        r = client.post("/api/news/refresh")
+    assert r.status_code == 200
+    assert r.get_json()["fetched"] is True
+    assert len(article_requests) == 1
 
 
 def test_second_refresh_within_cooldown_skips_articles_http(

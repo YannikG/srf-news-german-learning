@@ -110,18 +110,17 @@ class NewsRefreshService:
                 limit=self._articles_limit,
             )
         except SrgOAuthHttpError as exc:
-            code = "upstream_auth" if exc.status_code == 401 else "upstream_rate_limited"
             if exc.status_code == 401:
                 raise NewsRefreshError(
                     "SRG OAuth rejected the client credentials (401).",
                     401,
-                    code=code,
+                    code="upstream_auth",
                 ) from exc
             if exc.status_code == 429:
                 raise NewsRefreshError(
                     "SRG OAuth rate limited token requests (429). Try again later.",
                     429,
-                    code=code,
+                    code="upstream_rate_limited",
                 ) from exc
             raise NewsRefreshError(
                 f"SRG OAuth token request failed (HTTP {exc.status_code}).",
@@ -189,4 +188,8 @@ class NewsRefreshService:
         raw = row["value"]
         if not isinstance(raw, str) or not raw.strip():
             return None
-        return _parse_utc_timestamp(raw)
+        try:
+            return _parse_utc_timestamp(raw)
+        except ValueError:
+            # Corrupt or legacy timestamp: behave like no prior successful fetch.
+            return None
