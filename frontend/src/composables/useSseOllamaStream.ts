@@ -122,36 +122,50 @@ export function useSseOllamaStream() {
   });
 
   async function cancelIdleShutdown(): Promise<{ ok: boolean; message?: string }> {
-    const res = await fetch(buildApiUrl('/api/ollama/cancel-idle-shutdown'), {
-      method: 'POST',
-      headers: { Accept: 'application/json' },
-    });
-    if (!res.ok) {
-      const message = await readErrorDetail(res);
-      return { ok: false, message };
+    try {
+      const res = await fetch(buildApiUrl('/api/ollama/cancel-idle-shutdown'), {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) {
+        const message = await readErrorDetail(res);
+        return { ok: false, message };
+      }
+      shutdownDialogOpen.value = false;
+      return { ok: true };
+    } catch (err) {
+      return {
+        ok: false,
+        message: err instanceof Error ? err.message : 'Netzwerkfehler',
+      };
     }
-    shutdownDialogOpen.value = false;
-    return { ok: true };
   }
 
   async function goToSleep(): Promise<{ ok: boolean; message?: string }> {
-    const res = await fetch(buildApiUrl('/api/ollama/go-to-sleep'), {
-      method: 'POST',
-      headers: { Accept: 'application/json' },
-    });
-    if (!res.ok) {
-      const message = await readErrorDetail(res);
-      return { ok: false, message };
-    }
-    const body: unknown = await res.json().catch(() => null);
-    if (isRecord(body) && body.ok === false) {
-      const detail = body.detail;
+    try {
+      const res = await fetch(buildApiUrl('/api/ollama/go-to-sleep'), {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) {
+        const message = await readErrorDetail(res);
+        return { ok: false, message };
+      }
+      const body: unknown = await res.json().catch(() => null);
+      if (isRecord(body) && body.ok === false) {
+        const detail = body.detail;
+        return {
+          ok: false,
+          message: typeof detail === 'string' ? detail : 'Ollama konnte nicht gestoppt werden.',
+        };
+      }
+      return { ok: true };
+    } catch (err) {
       return {
         ok: false,
-        message: typeof detail === 'string' ? detail : 'Ollama konnte nicht gestoppt werden.',
+        message: err instanceof Error ? err.message : 'Netzwerkfehler',
       };
     }
-    return { ok: true };
   }
 
   return {

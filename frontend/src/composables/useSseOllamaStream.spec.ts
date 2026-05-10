@@ -5,7 +5,7 @@ import PrimeVue from 'primevue/config';
 import ToastService from 'primevue/toastservice';
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { defineComponent } from 'vue';
+import { defineComponent, onMounted, ref } from 'vue';
 import { useSseOllamaStream } from './useSseOllamaStream';
 
 class MockEventSource {
@@ -162,5 +162,31 @@ describe('useSseOllamaStream', () => {
     es.emit('llm_done', { article_id: 'a1', cefr_level: 'B1', simplification_id: 1 });
     await flushPromises();
     expect(wrapper.get('[data-testid="preview"]').text()).toBe('');
+  });
+
+  it('returns ok false when cancel fetch throws', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    const ThrowHarness = defineComponent({
+      template: '<span data-testid="out">{{ out }}</span>',
+      setup() {
+        const { cancelIdleShutdown } = useSseOllamaStream();
+        const out = ref('');
+        onMounted(async () => {
+          const r = await cancelIdleShutdown();
+          out.value = r.ok ? 'ok' : `err:${r.message ?? ''}`;
+        });
+        return { out };
+      },
+    });
+    lastWrapper = mount(ThrowHarness, {
+      global: {
+        plugins: [
+          [PrimeVue, { theme: { preset: Aura, options: { darkModeSelector: false } } }],
+          ToastService,
+        ],
+      },
+    });
+    await flushPromises();
+    expect(lastWrapper.get('[data-testid="out"]').text()).toBe('err:offline');
   });
 });
