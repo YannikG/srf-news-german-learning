@@ -1,3 +1,10 @@
+[project]
+name = "srf-news-backend"
+version = "0.0.0"
+description = "Flask backend for SRF News German Learning (not published to PyPI)"
+readme = "README.md"
+requires-python = ">=3.12"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
