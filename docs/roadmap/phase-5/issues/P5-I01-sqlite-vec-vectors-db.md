@@ -12,13 +12,13 @@
 
 ## Goal
 
-Persistente **`vectors.db`** nur für Vektordaten; **sqlite-vec** im Web-Container laden (linux/arm64 berücksichtigen); Schema für Wort-Embeddings und Abfrage-Helfer; dokumentierter **NumPy-Fallback** falls Extension fehlschlägt.
+Persistente **`vectors.db`** nur für Vektordaten; **sqlite-vec** im Web-Container laden (linux/arm64 berücksichtigen, siehe Backend-Dockerfile und README); Schema für Wort-Embeddings (768 Dimensionen, Anschluss an `nomic-embed-text` in P5-I02) und Abfrage-Helfer; **kein** Anwendungs-Fallback ohne Extension (Start schlägt fehl, wenn sqlite-vec nicht geladen werden kann).
 
 ## Testable acceptance criteria
 
-- [ ] Insert und KNN-Abfrage in `pytest` mit temporärer `vectors.db` (oder In-Memory falls unterstützt).
-- [ ] Dockerfile-Dokumentation oder Multi-Stage-Build für sqlite-vec `.so`.
-- [ ] Fallback-Pfad durch einen Test oder explizit übersprungen mit Issue-Kommentar und einem Minimaltest für Cosinus.
+- [x] Insert und KNN-Abfrage in `pytest` mit temporärer `vectors.db`.
+- [x] Dockerfile-Dokumentation für sqlite-vec (Basis-Image glibc, PyPI-Wheel, amd64/arm64).
+- [x] Klarer Fehlerpfad bei fehlender Extension (Runtime) und Test für abgelehnte Legacy-Migration (ehemaliger Entwicklungs-Fallback).
 
 ## Dev lifecycle
 

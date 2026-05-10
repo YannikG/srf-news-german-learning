@@ -4,7 +4,7 @@
 
 ## DoD
 
-- [ ] sqlite-vec lädt im Web-Container oder dokumentierter Fallback (NumPy) mit Tests.
+- [x] sqlite-vec lädt im Web-Container (glibc-Image, PyPI-Wheel, amd64/arm64) mit Tests; kein Anwendungs-Fallback ohne Extension.
 - [ ] Vereinfachen-Endpoint ruft Ollama mit CEFR-Level auf; strukturierte Antwort wird validiert und gespeichert.
 - [ ] LLM-Stream erscheint als SSE-Events (oder festgelegter alternativer Transport laut Issue).
 - [ ] pytest für leeres Lexikon, malformed Stream, Mindestanzahl neuer Wörter falls spezifiziert.

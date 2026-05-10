@@ -216,9 +216,7 @@ def test_go_to_sleep_calls_sidecar_when_configured(
         calls.append((base, secret))
         return True, None
 
-    import app as app_root
-
-    monkeypatch.setattr(app_root, "post_ollama_stop", fake_stop)
+    monkeypatch.setattr("app.bootstrap.ollama_events.post_ollama_stop", fake_stop)
 
     app = _db_app(
         tmp_path_factory,
@@ -237,9 +235,7 @@ def test_go_to_sleep_propagates_stop_failure(
     def fake_stop(_base: str, _secret: str | None) -> tuple[bool, str | None]:
         return False, "boom"
 
-    import app as app_root
-
-    monkeypatch.setattr(app_root, "post_ollama_stop", fake_stop)
+    monkeypatch.setattr("app.bootstrap.ollama_events.post_ollama_stop", fake_stop)
 
     app = _db_app(
         tmp_path_factory,

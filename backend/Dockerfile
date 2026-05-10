@@ -1,4 +1,7 @@
-FROM python:3.12-alpine
+# Debian bookworm (glibc): PyPI ``sqlite-vec`` ships manylinux wheels for linux/amd64
+# and linux/arm64. Alpine/musl is avoided because those wheels do not apply.
+# No separate ``.so`` copy step when ``pip install sqlite-vec`` matches the image arch.
+FROM python:3.12-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -14,7 +17,7 @@ COPY app ./app
 COPY wsgi.py ./
 
 # Run as a non-root user; gunicorn binds to 8000 which does not need privileges.
-RUN adduser -D -u 1001 appuser \
+RUN useradd --create-home --uid 1001 appuser \
  && chown -R appuser:appuser /app
 USER appuser
 

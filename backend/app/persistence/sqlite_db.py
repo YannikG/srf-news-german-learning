@@ -7,22 +7,16 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-from sqlalchemy import create_engine, event
-from sqlalchemy.engine import URL, Connection, Engine
+from sqlalchemy.engine import Connection, Engine
+
+from .sqlite_engine import apply_foreign_keys_pragma, create_sqlite_engine
 
 # Key in ``Flask.extensions``; documented in ``backend/docs/architecture.md``.
 SQL_DATABASE_EXTENSION_KEY = "sql_database"
 
 
-def _apply_sqlite_foreign_keys_pragma(dbapi_connection: sqlite3.Connection) -> None:
-    """Run once per new DBAPI connection (SQLite only)."""
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
-
-
 def _on_sqlite_engine_connect(dbapi_connection: sqlite3.Connection, _record: object) -> None:
-    _apply_sqlite_foreign_keys_pragma(dbapi_connection)
+    apply_foreign_keys_pragma(dbapi_connection)
 
 
 class SqlDatabase:
@@ -34,13 +28,7 @@ class SqlDatabase:
     """
 
     def __init__(self, path: str | Path) -> None:
-        self._path = Path(path).expanduser().resolve()
-        url = URL.create(drivername="sqlite", database=str(self._path))
-        self._engine = create_engine(
-            url,
-            connect_args={"check_same_thread": False},
-        )
-        event.listen(self._engine, "connect", _on_sqlite_engine_connect)
+        self._path, self._engine = create_sqlite_engine(path, _on_sqlite_engine_connect)
 
     @property
     def path(self) -> Path:

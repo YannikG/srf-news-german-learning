@@ -9,7 +9,7 @@ Architektur (Schichten, Repository- und Service-Pattern, Flask-Wiring): [`docs/a
 ```
 backend/
   app/
-    __init__.py        # create_app() factory
+    bootstrap/         # create_app() wiring (factory, defaults, DB, blueprints, CLI)
     db/                # SQLite: Migrationen, Runner, init_database()
     persistence/       # SqlDatabase (SQLAlchemy Core engine for SQLite)
     health.py          # /api/health blueprint
@@ -114,6 +114,14 @@ source .venv/bin/activate   # wie oben
 flask --app wsgi init-db
 ```
 
+## Datenbank ``vectors.db`` (Phase 5, P5-I01)
+
+Liegt standardmässig **neben** ``app.db`` (gleiches Verzeichnis, z. B. unter ``/data`` in Compose). Beim ersten Start legt ``create_app()`` die Datei an; Schema ist ausschliesslich **sqlite-vec** (virtuelle Tabelle ``vec0``). Ohne ladbare Extension schlägt die Initialisierung mit einer klaren Fehlermeldung fehl (kein Anwendungs-Fallback). **Docker:** das Backend-Image nutzt ``python:3.12-slim-bookworm`` und das PyPI-Paket ``sqlite-vec``; lokal braucht es eine Python-Build mit SQLite-Extension-Support (oder Tests im Container).
+
+```bash
+flask --app wsgi init-vectors-db
+```
+
 ## Tests
 
 **Phase-2 layers:** API integration tests use Flask's test client (`client` in `tests/conftest.py`) against a temporary SQLite database; schema and migration tests assert SQL and the migration runner; small unit tests target pure helpers (for example migration bookkeeping validation) without HTTP.
@@ -148,7 +156,7 @@ Zum Anwenden der Formatter-Ausgabe: `ruff format app tests wsgi.py`. Der Pre-Com
 
 ## Docker
 
-The image is built by Compose at the repository root (see root `compose.yaml` and the root `README.md`). After `docker compose up -d` the same endpoint is reachable on the mapped port:
+The image is built by Compose at the repository root (see root `compose.yaml` and the root `README.md`). The backend image is **Debian slim (glibc)** so the ``sqlite-vec`` wheel from PyPI loads; Alpine/musl is not used here. After `docker compose up -d` the same endpoint is reachable on the mapped port:
 
 ```bash
 curl -fsS http://localhost:8000/api/health
