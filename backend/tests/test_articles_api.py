@@ -155,6 +155,40 @@ def test_get_article_by_id_returns_markdown(client: FlaskClient, app: Flask) -> 
     assert isinstance(row, dict)
     assert row["markdown_original"] == "## Inhalt\n\nHallo."
     assert row["title"] == "Eins"
+    assert row.get("markdown_simplified") is None
+    assert row.get("simplification_cefr_level") is None
+
+
+def test_get_article_detail_includes_latest_simplification(client: FlaskClient, app: Flask) -> None:
+    _insert_article(
+        app,
+        external_id="simp",
+        title="Mit Vereinfachung",
+        release_date="2026-05-09",
+        markdown="# Original",
+    )
+    db = app.extensions[SQL_DATABASE_EXTENSION_KEY]
+    assert isinstance(db, SqlDatabase)
+    with db.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO article_simplifications (article_id, cefr_level, markdown_simplified) "
+                "VALUES (1, 'B1', '## Alt')",
+            ),
+        )
+        conn.execute(
+            text(
+                "INSERT INTO article_simplifications (article_id, cefr_level, markdown_simplified) "
+                "VALUES (1, 'A2', '## Neu')",
+            ),
+        )
+    res = client.get("/api/articles/1")
+    assert res.status_code == 200
+    row = res.get_json()
+    assert isinstance(row, dict)
+    assert row["markdown_original"] == "# Original"
+    assert row["markdown_simplified"] == "## Neu"
+    assert row["simplification_cefr_level"] == "A2"
 
 
 def test_get_article_missing_returns_404(client: FlaskClient) -> None:
