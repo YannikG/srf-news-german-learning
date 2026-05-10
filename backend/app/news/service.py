@@ -28,10 +28,10 @@ class NewsRefreshError(Exception):
 _UPSERT_ARTICLE_SQL = """
 INSERT INTO articles (
     external_id, publisher, provenance, title, lead, markdown_original,
-    release_date, modification_date
+    release_date, modification_date, news_provider
 ) VALUES (
     :external_id, :publisher, :provenance, :title, :lead, :markdown_original,
-    :release_date, :modification_date
+    :release_date, :modification_date, :news_provider
 )
 ON CONFLICT(external_id) DO UPDATE SET
     publisher = excluded.publisher,
@@ -40,7 +40,8 @@ ON CONFLICT(external_id) DO UPDATE SET
     lead = excluded.lead,
     markdown_original = excluded.markdown_original,
     release_date = excluded.release_date,
-    modification_date = excluded.modification_date
+    modification_date = excluded.modification_date,
+    news_provider = excluded.news_provider
 """
 
 _METADATA_UPSERT_SQL = """
@@ -75,6 +76,7 @@ class NewsRefreshService:
         oauth_client: SrgOAuthClient,
         articles_client: SrgArticlesApiClient,
         *,
+        news_provider: str,
         now_fn: Callable[[], datetime] | None = None,
         articles_limit: int = 10,
         publisher: str = "SRF",
@@ -82,6 +84,7 @@ class NewsRefreshService:
         self._db = db
         self._oauth = oauth_client
         self._articles = articles_client
+        self._news_provider = news_provider
         self._now_fn = now_fn or (lambda: datetime.now(UTC))
         self._articles_limit = articles_limit
         self._publisher = publisher
@@ -161,7 +164,12 @@ class NewsRefreshService:
                 code="upstream_error",
             ) from exc
 
-        mappings = [map_article_to_app_db_fields(record) for record in page.results]
+        slug = self._news_provider
+        mappings = []
+        for record in page.results:
+            row = map_article_to_app_db_fields(record)
+            row["news_provider"] = slug
+            mappings.append(row)
         with self._db.begin() as conn:
             if mappings:
                 conn.execute(text(_UPSERT_ARTICLE_SQL), mappings)

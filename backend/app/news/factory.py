@@ -29,4 +29,5 @@ def build_default_news_refresh_service(app: Flask) -> NewsRefreshService:
         settings=articles_settings,
         http_client=shared_client,
     )
-    return NewsRefreshService(db, oauth, articles)
+    provider = str(app.config.get("NEWS_ACTIVE_PROVIDER") or "srgssr").strip().lower()
+    return NewsRefreshService(db, oauth, articles, news_provider=provider)

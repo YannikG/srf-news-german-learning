@@ -39,6 +39,7 @@ def test_api_health_not_shadowed_when_spa_present(tmp_path_factory: pytest.TempP
             "DATABASE_PATH": str(db_path),
             "OLLAMA_BASE_URL": "http://127.0.0.1:11434",
             "STATIC_SPA_DIR": str(spa),
+            "NEWS_ACTIVE_PROVIDER": "srgssr",
         },
     )
     try:

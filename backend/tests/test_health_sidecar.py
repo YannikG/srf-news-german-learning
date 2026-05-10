@@ -23,6 +23,7 @@ def app_with_sidecar(tmp_path_factory: pytest.TempPathFactory) -> Generator[Flas
             "DATABASE_PATH": str(db_path),
             "SIDECAR_BASE_URL": "http://sidecar:8090",
             "SIDECAR_SHARED_SECRET": "test-secret",
+            "NEWS_ACTIVE_PROVIDER": "srgssr",
         },
     )
     yield application

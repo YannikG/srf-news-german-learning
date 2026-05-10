@@ -86,6 +86,8 @@ Für Compose oder lokale Shell: Variablen in `.env` bzw. in der Service-Umgebung
 
 ## SRG News Refresh (Phase 3, P3-I03)
 
+**Active ingest provider (Phase 8, P8-I01):** `NEWS_ACTIVE_PROVIDER` selects which upstream implementation is wired for refresh (default `srgssr` when unset). Allowed values: `srgssr`, `newsapi`; `newsapi` is reserved and fails startup until P8-I04. Each article row stores a `news_provider` slug set on upsert; `GET /api/articles` and `GET /api/settings` expose it for the UI.
+
 `POST /api/news/refresh` holt bei freiem **Cooldown** eine Seite der SRGSSR Articles API (`publisher=SRF`, `limit=10`), mappt die Ergebnisse nach SQLite und aktualisiert `srg_sync_metadata`. Nach jedem **erfolgreichen** Abruf gilt **900 Sekunden** Sperre gegenüber weiteren Upstream-Calls; innerhalb dieses Fensters liefert die Route `fetched: false` und `next_allowed_fetch_at` (ISO-8601 mit `Z`). Der Wert **900** ist in `app/news/constants.py` als `REFRESH_COOLDOWN_SECONDS` definiert und in Tests gegen `freezegun` abgesichert.
 
 `GET /api/articles` liest ausschliesslich aus der lokalen Datenbank und ruft SRG nicht auf.
@@ -94,6 +96,7 @@ Für Compose oder lokale Shell: Variablen in `.env` bzw. in der Service-Umgebung
 
 | Variable | Bedeutung |
 |----------|-----------|
+| `NEWS_ACTIVE_PROVIDER` | Ingest-Slug für Refresh und `articles.news_provider`; Standard `srgssr`; `newsapi` noch nicht implementiert (P8-I04). |
 | `SRGSSR_ARTICLES_BASE_URL` | Basis-URL der Articles API; Standard: `https://api.srgssr.ch/srgssr-articles/v2` |
 | `SRGSSR_ARTICLES_USER_AGENT` | User-Agent für `GET /articles`; Standard: `srf-news-german-learning` |
 

@@ -32,6 +32,8 @@ def app(tmp_path_factory: pytest.TempPathFactory) -> Generator[Flask, None, None
             "DATABASE_PATH": str(db_path),
             # Tests mock Ollama HTTP; host is arbitrary but must be non-empty for embed client.
             "OLLAMA_BASE_URL": "http://127.0.0.1:11434",
+            # Isolate from developer env (e.g. NEWS_ACTIVE_PROVIDER=newsapi would fail bootstrap).
+            "NEWS_ACTIVE_PROVIDER": "srgssr",
         },
     )
     yield application

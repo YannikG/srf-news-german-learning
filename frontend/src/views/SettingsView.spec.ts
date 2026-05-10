@@ -24,6 +24,7 @@ const baseRow = {
   translation_language: 'en',
   retrieval_top_k: null,
   retrieval_context_max_chars: null,
+  active_ingest_provider: 'srgssr',
 };
 
 describe('SettingsView', () => {

@@ -29,14 +29,22 @@ def _settings_service() -> SettingsService:
     return build_settings_service(db)
 
 
+def _with_active_ingest_provider(row: dict[str, Any]) -> dict[str, Any]:
+    """Merge read-only config derived fields (not stored in ``settings`` table)."""
+    return {
+        **row,
+        "active_ingest_provider": str(current_app.config.get("NEWS_ACTIVE_PROVIDER") or "srgssr"),
+    }
+
+
 @settings_bp.get("/settings")
 def get_settings() -> tuple[Response, int]:
     row = _settings_service().get_settings()
-    return jsonify(row), 200
+    return jsonify(_with_active_ingest_provider(row)), 200
 
 
 @settings_bp.patch("/settings")
 def patch_settings() -> tuple[Response, int]:
     body: Any = request.get_json(silent=True)
     row = _settings_service().patch_settings(body)
-    return jsonify(row), 200
+    return jsonify(_with_active_ingest_provider(row)), 200

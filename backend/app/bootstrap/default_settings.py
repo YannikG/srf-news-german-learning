@@ -10,6 +10,7 @@ from typing import Any
 from flask import Flask
 
 from ..db import APP_DB_PATH
+from ..news.active_provider import resolve_configured_news_active_provider
 
 _APP_PACKAGE_DIR = Path(__file__).resolve().parents[1]
 _DEFAULT_STATIC_SPA_DIR = _APP_PACKAGE_DIR / "static" / "spa"
@@ -63,6 +64,13 @@ def apply_default_config(app: Flask, test_config: Mapping[str, Any] | None) -> N
 
     if test_config is not None:
         app.config.update(test_config)
+
+    cfg_provider = app.config.get("NEWS_ACTIVE_PROVIDER")
+    env_provider = os.environ.get("NEWS_ACTIVE_PROVIDER")
+    merged = cfg_provider if cfg_provider is not None else env_provider
+    app.config["NEWS_ACTIVE_PROVIDER"] = resolve_configured_news_active_provider(
+        merged if isinstance(merged, str) else None,
+    )
 
     app.config.setdefault(
         "OLLAMA_IDLE_SHUTDOWN_SECONDS",

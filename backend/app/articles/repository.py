@@ -12,12 +12,12 @@ from ..persistence.sqlite_db import SqlDatabase
 
 _LIST_COLUMNS = (
     "id, external_id, publisher, provenance, title, lead, release_date, "
-    "modification_date, cefr_level, created_at, updated_at"
+    "modification_date, cefr_level, news_provider, created_at, updated_at"
 )
 
 _LIST_COLUMNS_QUALIFIED = (
     "a.id, a.external_id, a.publisher, a.provenance, a.title, a.lead, a.release_date, "
-    "a.modification_date, a.cefr_level, a.created_at, a.updated_at"
+    "a.modification_date, a.cefr_level, a.news_provider, a.created_at, a.updated_at"
 )
 
 _DETAIL_WITH_SIMPLIFICATION = (

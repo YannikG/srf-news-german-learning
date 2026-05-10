@@ -12,6 +12,7 @@ import {
   type CefrLevel,
   type TranslationLanguage,
 } from '@/types/settings';
+import { newsProviderLabel } from '@/utils/newsProviderLabel';
 
 const toast = useToast();
 
@@ -118,6 +119,13 @@ onMounted(() => {
     </div>
 
     <template v-else-if="serverRow">
+      <p class="text-xs text-slate-600">
+        Aktiver News-Ingest:
+        <span class="font-medium text-slate-800">{{
+          newsProviderLabel(serverRow.active_ingest_provider)
+        }}</span>
+        <span class="text-slate-400"> ({{ serverRow.active_ingest_provider }})</span>
+      </p>
       <div class="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <div class="flex flex-col gap-1">
           <label class="text-xs font-medium text-slate-600" for="settings-translation"
