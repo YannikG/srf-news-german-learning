@@ -14,9 +14,11 @@ backend/
     persistence/       # SqlDatabase (SQLAlchemy Core engine for SQLite)
     health.py          # /api/health blueprint
     articles/          # Artikel-API: routes, service, repository, ports, factory
+    news/              # POST /api/news/refresh (SRG ingest + Cooldown)
     words/             # Wörterbuch-API: routes, service, repository, ports, factory
     settings/          # Einstellungen-API: routes, service, repository, ports, factory
     srg_oauth/         # SRG SSR OAuth2 Client Credentials (defaults, settings, client)
+    srg_articles/      # Articles API v2: models, mapping, HTTP client (Bearer GET /articles)
   docs/
     architecture.md    # Schichtenmodell und Wiring
   tests/
@@ -77,6 +79,21 @@ Der Token-Client in `app/srg_oauth/` ruft per Default den SRG-Endpoint **`https:
 **Programm-API:** `from app.srg_oauth import SrgOAuthClient`, `SrgSsrOAuthSettings`, `build_srg_oauth_client`; Zugriffstoken über `get_access_token()`. Token wird im Speicher gecacht und etwa 60 Sekunden vor Ablauf der vom Server gemeldeten Gültigkeit erneuert. Bei HTTP-Fehlern wirft `SrgOAuthHttpError` den Response-Text zusätzlich in `body`; Verbindungs- und Timeoutfehler von httpx erscheinen als `SrgOAuthClientError` mit verketteter Ursache (`__cause__`).
 
 Für Compose oder lokale Shell: Variablen in `.env` bzw. in der Service-Umgebung setzen (keine Secrets ins Git).
+
+## SRG News Refresh (Phase 3, P3-I03)
+
+`POST /api/news/refresh` holt bei freiem **Cooldown** eine Seite der SRGSSR Articles API (`publisher=SRF`, `limit=10`), mappt die Ergebnisse nach SQLite und aktualisiert `srg_sync_metadata`. Nach jedem **erfolgreichen** Abruf gilt **900 Sekunden** Sperre gegenüber weiteren Upstream-Calls; innerhalb dieses Fensters liefert die Route `fetched: false` und `next_allowed_fetch_at` (ISO-8601 mit `Z`). Der Wert **900** ist in `app/news/constants.py` als `REFRESH_COOLDOWN_SECONDS` definiert und in Tests gegen `freezegun` abgesichert.
+
+`GET /api/articles` liest ausschliesslich aus der lokalen Datenbank und ruft SRG nicht auf.
+
+**Zusätzliche Umgebungsvariablen (optional):**
+
+| Variable | Bedeutung |
+|----------|-----------|
+| `SRGSSR_ARTICLES_BASE_URL` | Basis-URL der Articles API; Standard: `https://api.srgssr.ch/srgssr-articles/v2` |
+| `SRGSSR_ARTICLES_USER_AGENT` | User-Agent für `GET /articles`; Standard: `srf-news-german-learning` |
+
+**Tests:** In `pytest` kann ein eigener `NewsRefreshService` über `app.config["NEWS_REFRESH_SERVICE"]` injiziert werden (siehe `tests/test_news_refresh.py`).
 
 ## Datenbank (`app.db`)
 
