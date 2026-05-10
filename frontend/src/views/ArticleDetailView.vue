@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import SelectButton from 'primevue/selectbutton';
 import ProgressSpinner from 'primevue/progressspinner';
-import { computed, ref, watch } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { fetchArticleDetail } from '@/api/fetchArticles';
 import type { ArticleDetail } from '@/types/article';
@@ -36,19 +36,29 @@ const bodyHtml = computed(() =>
   bodyMarkdown.value ? renderArticleMarkdown(bodyMarkdown.value) : ''
 );
 
+/** Ignores stale detail responses when the route id changes quickly. */
+let detailLoadSeq = 0;
+
 async function load(id: number) {
+  const seq = ++detailLoadSeq;
   loading.value = true;
   error.value = null;
   article.value = null;
   viewMode.value = 'original';
-  const res = await fetchArticleDetail(id);
-  loading.value = false;
-  if (!res.ok) {
-    error.value = res.message;
-    return;
+  try {
+    const res = await fetchArticleDetail(id);
+    if (seq !== detailLoadSeq) return;
+    if (!res.ok) {
+      error.value = res.message;
+      return;
+    }
+    article.value = res.data;
+    viewMode.value = 'original';
+  } finally {
+    if (seq === detailLoadSeq) {
+      loading.value = false;
+    }
   }
-  article.value = res.data;
-  viewMode.value = 'original';
 }
 
 watch(
@@ -56,13 +66,21 @@ watch(
   (id) => {
     const n = Number(id);
     if (!Number.isFinite(n) || n < 1) {
+      detailLoadSeq += 1;
       error.value = 'Ungültige Artikel-ID';
+      loading.value = false;
+      article.value = null;
       return;
     }
     void load(n);
   },
   { immediate: true }
 );
+
+onUnmounted(() => {
+  detailLoadSeq += 1;
+  loading.value = false;
+});
 </script>
 
 <template>

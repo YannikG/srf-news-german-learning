@@ -14,6 +14,9 @@ function ensureMarkedOptions(): void {
 export function renderArticleMarkdown(markdown: string): string {
   ensureMarkedOptions();
   const cleaned = stripMediaFromText(markdown);
-  const html = marked.parse(cleaned) as string;
-  return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+  const parsed = marked.parse(cleaned);
+  if (typeof parsed !== 'string') {
+    throw new Error('marked.parse returned non-string; async mode is not supported here');
+  }
+  return DOMPurify.sanitize(parsed, { USE_PROFILES: { html: true } });
 }

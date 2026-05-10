@@ -2,7 +2,7 @@
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import ProgressSpinner from 'primevue/progressspinner';
-import { computed, ref, watch } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import { fetchArticlesList } from '@/api/fetchArticles';
@@ -21,8 +21,21 @@ const {
 } = useNewsRefresh();
 
 function parseQueryDate(q: unknown): string | null {
-  if (typeof q !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(q)) return null;
-  return q;
+  const raw = Array.isArray(q) ? q[0] : q;
+  if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
+  return raw;
+}
+
+/** Flatten router query values to plain strings for ``router.replace``. */
+function queryRecordForReplace(): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, val] of Object.entries(route.query)) {
+    const first = Array.isArray(val) ? val[0] : val;
+    if (typeof first === 'string' && first.length > 0) {
+      out[key] = first;
+    }
+  }
+  return out;
 }
 
 function localIsoDate(d: Date): string {
@@ -50,7 +63,7 @@ watch(
 watch(selectedDate, (d) => {
   const cur = parseQueryDate(route.query.d);
   if (cur === d) return;
-  void router.replace({ path: '/', query: { ...route.query, d } });
+  void router.replace({ path: '/', query: { ...queryRecordForReplace(), d } });
 });
 
 const searchInput = ref('');
@@ -63,6 +76,13 @@ watch(searchInput, (v) => {
     debouncedSearch.value = v;
     debounceTimer = null;
   }, 300);
+});
+
+onUnmounted(() => {
+  if (debounceTimer != null) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
 });
 
 const pullStartY = ref<number | null>(null);
