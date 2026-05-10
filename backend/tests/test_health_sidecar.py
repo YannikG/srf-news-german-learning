@@ -44,6 +44,9 @@ def test_health_sidecar_ok_when_inspect_succeeds(
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.text = ""
+    mock_response.json.return_value = {
+        "ollama": {"state": "running", "name": "/project-ollama-1"},
+    }
     mock_http = MagicMock()
     mock_http.get.return_value = mock_response
     mock_sidecar_http.return_value = mock_http
@@ -53,7 +56,10 @@ def test_health_sidecar_ok_when_inspect_succeeds(
     assert response.status_code == 200
     payload = response.get_json()
     assert payload["ok"] is True
-    assert payload["sidecar"] == {"status": "ok"}
+    assert payload["sidecar"] == {
+        "status": "ok",
+        "ollama": {"state": "running", "name": "/project-ollama-1"},
+    }
     mock_http.get.assert_called_once()
     args, kwargs = mock_http.get.call_args
     assert args[0] == "http://sidecar:8090/ollama/inspect"

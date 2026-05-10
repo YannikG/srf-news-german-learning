@@ -7,12 +7,13 @@ import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { formatOllamaContainerStateLabel } from '@/api/formatHealthFooterLine';
 import { useApiHealthPoll } from '@/composables/useApiHealthPoll';
 import { useSseOllamaStream } from '@/composables/useSseOllamaStream';
 
 const route = useRoute();
 const toast = useToast();
-const { health, statusLine } = useApiHealthPoll();
+const { health, statusLine, refresh: refreshHealth } = useApiHealthPoll();
 const {
   ollamaState,
   ollamaBusy,
@@ -26,6 +27,23 @@ const {
 const showBusy = computed(() => health.value.kind === 'loading' || ollamaBusy.value);
 const showStreamBox = computed(() => streamPreview.value.length > 0);
 const sleepEnabled = computed(() => ollamaState.value?.idle_enabled === true);
+
+/** Docker container state from the last ``GET /api/health`` sidecar inspect (poll ~30s). */
+const ollamaRuntimeLine = computed(() => {
+  const h = health.value;
+  if (h.kind !== 'ok') {
+    return null;
+  }
+  const sc = h.payload.sidecar;
+  if (!sc || sc.status !== 'ok') {
+    return null;
+  }
+  const st = sc.ollama?.state;
+  if (!st) {
+    return null;
+  }
+  return `Ollama-Container: ${formatOllamaContainerStateLabel(st)}`;
+});
 
 async function onCancelShutdown() {
   const r = await cancelIdleShutdown();
@@ -64,6 +82,7 @@ async function onStartOllama() {
       'Der Start wurde ausgelöst. Je nach Modell kann es etwas dauern, bis Ollama wieder bereit ist.',
     life: 5000,
   });
+  void refreshHealth();
 }
 </script>
 
@@ -120,16 +139,29 @@ async function onStartOllama() {
               Einstellungen
             </RouterLink>
           </nav>
-          <Button
+          <div
             v-if="ollamaState !== null && sleepEnabled"
-            label="Ollama starten"
-            severity="secondary"
-            size="small"
-            outlined
-            title="Ollama-Container über das Sidecar starten"
-            aria-label="Ollama starten"
-            @click="onStartOllama"
-          />
+            class="flex flex-col items-stretch gap-1 sm:items-end"
+          >
+            <p
+              v-if="ollamaRuntimeLine"
+              class="text-right text-xs text-slate-500"
+              role="status"
+              data-testid="ollama-runtime-status"
+            >
+              {{ ollamaRuntimeLine }}
+            </p>
+            <Button
+              label="Ollama starten"
+              severity="secondary"
+              size="small"
+              outlined
+              class="self-stretch sm:self-end"
+              title="Ollama-Container über das Sidecar starten"
+              aria-label="Ollama starten"
+              @click="onStartOllama"
+            />
+          </div>
         </div>
       </div>
     </header>

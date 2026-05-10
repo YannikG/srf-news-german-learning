@@ -1,7 +1,15 @@
+/** Sidecar slice from ``GET /api/health`` when ``SIDECAR_BASE_URL`` is set. */
+export interface SidecarHealthPayload {
+  status: string;
+  detail?: string;
+  /** Present when inspect returned 200 with a parseable ``ollama`` object. */
+  ollama?: { state: string; name?: string };
+}
+
 /** Subset of ``GET /api/health`` JSON. */
 export interface HealthPayload {
   ok: boolean;
-  sidecar?: { status: string; detail?: string };
+  sidecar?: SidecarHealthPayload;
 }
 
 export type HealthState =

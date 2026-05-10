@@ -1,5 +1,20 @@
 import type { HealthState } from './healthTypes';
 
+/** Docker-style container ``state`` to short German label (footer and header). */
+export function formatOllamaContainerStateLabel(state: string): string {
+  const s = state.trim().toLowerCase();
+  const map: Record<string, string> = {
+    running: 'läuft',
+    exited: 'gestoppt',
+    created: 'erstellt',
+    paused: 'pausiert',
+    restarting: 'Neustart',
+    dead: 'tot',
+    removing: 'wird entfernt',
+  };
+  return map[s] ?? state;
+}
+
 /** Maps poll state to a single German footer line (presentation only). */
 export function formatHealthFooterLine(state: HealthState): string {
   if (state.kind === 'loading') {
@@ -15,6 +30,9 @@ export function formatHealthFooterLine(state: HealthState): string {
   if (sc) {
     const label = sc.status === 'ok' ? 'OK' : 'Fehler';
     parts.push(`Sidecar: ${label}`);
+    if (sc.status === 'ok' && sc.ollama?.state) {
+      parts.push(`Ollama: ${formatOllamaContainerStateLabel(sc.ollama.state)}`);
+    }
     if (sc.detail) {
       parts.push(`(${sc.detail})`);
     }

@@ -19,6 +19,18 @@ describe('formatHealthFooterLine', () => {
     ).toBe('API: OK · Sidecar: OK');
   });
 
+  it('includes Ollama container state when sidecar inspect returns it', () => {
+    expect(
+      formatHealthFooterLine({
+        kind: 'ok',
+        payload: {
+          ok: true,
+          sidecar: { status: 'ok', ollama: { state: 'exited', name: '/x' } },
+        },
+      })
+    ).toBe('API: OK · Sidecar: OK · Ollama: gestoppt');
+  });
+
   it('formats ok without sidecar', () => {
     expect(
       formatHealthFooterLine({
