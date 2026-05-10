@@ -53,8 +53,9 @@ On Windows PowerShell use `backend\.venv\Scripts\Activate.ps1` instead of `sourc
 ```bash
 cd backend
 flask --app wsgi run --host 0.0.0.0 --port 8000
-# or, with gunicorn (matches the Docker image; ``--timeout 0`` avoids killing SSE streams):
-gunicorn --bind 0.0.0.0:8000 --timeout 0 wsgi:app
+# or, with gunicorn (align with Docker: ``-k gthread`` so SSE does not monopolize a whole worker,
+# plus ``--timeout 0`` for long-lived streams):
+gunicorn --bind 0.0.0.0:8000 -k gthread --workers 2 --threads 16 --timeout 0 wsgi:app
 ```
 
 Smoke test:
@@ -66,7 +67,7 @@ curl -fsS http://localhost:8000/api/health
 
 ## SRG SSR OAuth (Client Credentials, Phase 3)
 
-Der Token-Client in `app/srg_oauth/` ruft per Default den SRG-Endpoint **`https://api.srgssr.ch/oauth/v1/accesstoken`** auf (OAuth2 `grant_type=client_credentials`, HTTP Basic mit Consumer Key und Secret). Token-URL und User-Agent sind über Umgebungsvariablen oder Konstruktor-Argumente überschreibbar (siehe Tabelle); sinnvoll z. B. für Tests mit einem Mock-Server.
+Der Token-Client in `app/srg_oauth/` ruft per Default den SRG-Endpoint **`https://api.srgssr.ch/oauth/v1/accesstoken`** auf: **POST** mit leerem Body, **HTTP Basic** (Consumer Key und Secret), und **`grant_type=client_credentials` in der Query** der URL (SRG erwartet dieses Format; ein Form-Body führt typischerweise zu HTTP 400). Token-URL und User-Agent sind über Umgebungsvariablen oder Konstruktor-Argumente überschreibbar (siehe Tabelle); sinnvoll z. B. für Tests mit einem Mock-Server.
 
 **Konfiguration (Umgebungsvariablen):**
 

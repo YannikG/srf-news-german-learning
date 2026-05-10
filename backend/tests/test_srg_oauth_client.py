@@ -14,6 +14,7 @@ from app.srg_oauth.client import (
     SrgOAuthClientError,
     SrgOAuthHttpError,
     SrgOAuthTokenResponseError,
+    _token_url_with_grant_query,
 )
 from app.srg_oauth.factory import build_srg_oauth_client
 from app.srg_oauth.settings import SrgSsrOAuthSettings
@@ -24,20 +25,18 @@ def _basic_header(key: str, secret: str) -> str:
     return f"Basic {raw}"
 
 
-def test_token_success_sets_user_agent_basic_auth_form_body_and_caches() -> None:
+def test_token_success_sets_user_agent_basic_auth_query_grant_and_caches() -> None:
     http_calls = 0
 
     def handler(request: httpx.Request) -> httpx.Response:
         nonlocal http_calls
         http_calls += 1
-        assert str(request.url) == TOKEN_URL
+        assert str(request.url).startswith(TOKEN_URL)
+        assert "grant_type=client_credentials" in str(request.url)
         assert request.method == "POST"
         assert request.headers.get("user-agent") == USER_AGENT
         assert request.headers.get("authorization") == _basic_header("ck", "cs")
-        ct = request.headers.get("content-type", "")
-        assert "application/x-www-form-urlencoded" in ct
-        body = request.content.decode()
-        assert "grant_type=client_credentials" in body
+        assert request.content == b""
         if http_calls == 1:
             return httpx.Response(
                 200,
@@ -186,7 +185,8 @@ def test_client_custom_token_url_and_user_agent() -> None:
     custom_url = "https://example.test/oauth/token"
 
     def handler(request: httpx.Request) -> httpx.Response:
-        assert str(request.url) == custom_url
+        assert str(request.url).startswith(custom_url)
+        assert "grant_type=client_credentials" in str(request.url)
         assert request.headers.get("user-agent") == "my-ua/2"
         return httpx.Response(200, json={"access_token": "x", "expires_in": 60})
 
@@ -203,3 +203,10 @@ def test_client_custom_token_url_and_user_agent() -> None:
         assert oauth.get_access_token() == "x"
     finally:
         client.close()
+
+
+def test_token_url_with_grant_query_merges_existing_query() -> None:
+    out = _token_url_with_grant_query("https://api.example/oauth?foo=bar&grant_type=old")
+    assert "foo=bar" in out
+    assert "grant_type=client_credentials" in out
+    assert "grant_type=old" not in out

@@ -8,7 +8,10 @@ from ..events.constants import EVENTS_SSE_HUB_KEY
 from ..events.hub import SseHub
 from ..sidecar.client import post_ollama_start
 from .constants import OLLAMA_IDLE_SERVICE_KEY
-from .inspect_watcher import spawn_ollama_container_inspect_watcher
+from .inspect_watcher import (
+    bump_ollama_inspect_watcher_generation,
+    spawn_ollama_container_inspect_watcher,
+)
 from .service import OllamaIdleService
 
 ollama_bp = Blueprint("ollama", __name__)
@@ -57,6 +60,7 @@ def go_to_sleep() -> tuple[Response, int]:
             ),
             503,
         )
+    bump_ollama_inspect_watcher_generation()
     ok, err = svc.go_to_sleep()
     if not ok:
         return jsonify(ok=False, detail=err or "stop_failed"), 502

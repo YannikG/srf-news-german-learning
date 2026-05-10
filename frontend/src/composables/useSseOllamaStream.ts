@@ -1,4 +1,4 @@
-import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 import { buildApiUrl } from '@/api/buildApiUrl';
 
 export type OllamaPublicState = {
@@ -86,6 +86,11 @@ export function useSseOllamaStream() {
     streamPreview.value = '';
   }
 
+  /** Clears SSE override so container state falls back to ``GET /api/health`` (e.g. after manual stop). */
+  function clearOllamaContainerFromStream() {
+    ollamaContainerFromStream.value = null;
+  }
+
   function attachListeners(es: EventSource) {
     es.addEventListener('ollama_state', (ev) => {
       const parsed = parseOllamaState(safeParseData(ev as MessageEvent));
@@ -128,6 +133,7 @@ export function useSseOllamaStream() {
     if (typeof ES !== 'function') {
       return;
     }
+    disconnect();
     const url = buildApiUrl('/api/events/stream');
     source = new ES(url) as EventSource;
     attachListeners(source);
@@ -139,11 +145,23 @@ export function useSseOllamaStream() {
     source = null;
   }
 
+  let pagehideDisconnect: (() => void) | null = null;
+
   onMounted(() => {
+    if (typeof globalThis.window !== 'undefined') {
+      pagehideDisconnect = () => {
+        disconnect();
+      };
+      globalThis.window.addEventListener('pagehide', pagehideDisconnect);
+    }
     connect();
   });
 
-  onUnmounted(() => {
+  onBeforeUnmount(() => {
+    if (typeof globalThis.window !== 'undefined' && pagehideDisconnect) {
+      globalThis.window.removeEventListener('pagehide', pagehideDisconnect);
+      pagehideDisconnect = null;
+    }
     disconnect();
   });
 
@@ -225,6 +243,7 @@ export function useSseOllamaStream() {
     ollamaState,
     ollamaBusy,
     ollamaContainerFromStream,
+    clearOllamaContainerFromStream,
     streamPreview,
     shutdownDialogOpen,
     shutdownWarningSeconds,

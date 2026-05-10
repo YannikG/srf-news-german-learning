@@ -8,6 +8,12 @@ services:
       dockerfile: backend/Dockerfile
     ports:
       - "8000:8000"
+    # Host-Dateien (optional): fehlen sie, startet Compose trotzdem. SRG u. a. landen im Container-``os.environ``.
+    env_file:
+      - path: backend/.env
+        required: false
+      - path: backend/local.env
+        required: false
     volumes:
       # Single directory mount: SQLite expects files under /data, not named volumes on file paths.
       - app_data:/data
@@ -22,6 +28,7 @@ services:
 
   ollama:
     image: ollama/ollama:0.23.2
+    restart: unless-stopped
     ports:
       - "11434:11434"
     volumes:

@@ -16,15 +16,48 @@ const { health, statusLine, refresh: refreshHealth } = useApiHealthPoll();
 const {
   ollamaState,
   ollamaContainerFromStream,
+  clearOllamaContainerFromStream,
   streamPreview,
   shutdownDialogOpen,
   shutdownWarningSeconds,
   cancelIdleShutdown,
+  goToSleep,
   startOllama,
 } = useSseOllamaStream();
 
 const showStreamBox = computed(() => streamPreview.value.length > 0);
 const sleepEnabled = computed(() => ollamaState.value?.idle_enabled === true);
+
+/** Prefer SSE ``ollama_container``, else health sidecar inspect (poll). */
+const effectiveOllamaDockerState = computed(() => {
+  const sse = ollamaContainerFromStream.value?.state;
+  if (sse) {
+    return sse;
+  }
+  const h = health.value;
+  if (h.kind !== 'ok') {
+    return undefined;
+  }
+  const sc = h.payload.sidecar;
+  if (!sc || sc.status !== 'ok') {
+    return undefined;
+  }
+  return sc.ollama?.state;
+});
+
+const ollamaDockerRunning = computed(() => effectiveOllamaDockerState.value === 'running');
+
+const ollamaPowerLabel = computed(() =>
+  ollamaDockerRunning.value ? 'Ollama stoppen' : 'Ollama starten'
+);
+
+const ollamaPowerTitle = computed(() =>
+  ollamaDockerRunning.value
+    ? 'Ollama-Container jetzt stoppen (Ruhezustand)'
+    : 'Ollama-Container über das Sidecar starten'
+);
+
+const ollamaPowerAriaLabel = computed(() => ollamaPowerLabel.value);
 
 /** Docker container state: SSE ``ollama_container`` (after start) else ``GET /api/health`` (poll ~30s). */
 const ollamaRuntimeLine = computed(() => {
@@ -85,6 +118,35 @@ async function onStartOllama() {
     life: 5000,
   });
   void refreshHealth();
+}
+
+async function onStopOllama() {
+  const r = await goToSleep();
+  if (!r.ok) {
+    toast.add({
+      severity: 'error',
+      summary: 'Ollama stoppen',
+      detail: r.message ?? 'Ollama konnte nicht gestoppt werden.',
+      life: 6000,
+    });
+    return;
+  }
+  clearOllamaContainerFromStream();
+  toast.add({
+    severity: 'success',
+    summary: 'Ollama stoppen',
+    detail: 'Ollama wurde in den Ruhezustand versetzt.',
+    life: 4000,
+  });
+  void refreshHealth();
+}
+
+async function onOllamaPowerClick() {
+  if (ollamaDockerRunning.value) {
+    await onStopOllama();
+  } else {
+    await onStartOllama();
+  }
 }
 </script>
 
@@ -154,14 +216,14 @@ async function onStartOllama() {
               {{ ollamaRuntimeLine }}
             </p>
             <Button
-              label="Ollama starten"
+              :label="ollamaPowerLabel"
               severity="secondary"
               size="small"
               outlined
               class="self-stretch sm:self-end"
-              title="Ollama-Container über das Sidecar starten"
-              aria-label="Ollama starten"
-              @click="onStartOllama"
+              :title="ollamaPowerTitle"
+              :aria-label="ollamaPowerAriaLabel"
+              @click="onOllamaPowerClick"
             />
           </div>
         </div>

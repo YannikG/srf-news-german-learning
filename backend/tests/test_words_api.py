@@ -72,6 +72,112 @@ def test_create_list_get_patch_delete_word(client: FlaskClient) -> None:
     assert missing.status_code == 404
 
 
+def test_list_filter_by_cefr_level(client: FlaskClient) -> None:
+    _post_json(
+        client,
+        {
+            "german_label": "low",
+            "category": "",
+            "difficulty": "Neu",
+            "translation": "",
+            "cefr_level": "A1",
+        },
+    )
+    _post_json(
+        client,
+        {
+            "german_label": "high",
+            "category": "",
+            "difficulty": "Neu",
+            "translation": "",
+            "cefr_level": "C2",
+        },
+    )
+    a1 = client.get("/api/words?cefr_level=A1").get_json()
+    assert isinstance(a1, list)
+    assert len(a1) == 1
+    assert a1[0]["german_label"] == "low"
+
+
+def test_list_filter_cefr_none_matches_null(client: FlaskClient) -> None:
+    _post_json(
+        client,
+        {"german_label": "n", "category": "", "difficulty": "Neu", "translation": ""},
+    )
+    _post_json(
+        client,
+        {
+            "german_label": "b",
+            "category": "",
+            "difficulty": "Neu",
+            "translation": "",
+            "cefr_level": "B1",
+        },
+    )
+    null_only = client.get("/api/words?cefr_level=__none__").get_json()
+    assert isinstance(null_only, list)
+    assert len(null_only) == 1
+    assert null_only[0]["german_label"] == "n"
+    assert null_only[0]["cefr_level"] is None
+
+
+def test_list_filter_category_and_cefr_level(client: FlaskClient) -> None:
+    _post_json(
+        client,
+        {
+            "german_label": "x",
+            "category": "geo",
+            "difficulty": "Neu",
+            "translation": "",
+            "cefr_level": "A2",
+        },
+    )
+    _post_json(
+        client,
+        {
+            "german_label": "y",
+            "category": "geo",
+            "difficulty": "Neu",
+            "translation": "",
+            "cefr_level": "B1",
+        },
+    )
+    _post_json(
+        client,
+        {
+            "german_label": "z",
+            "category": "math",
+            "difficulty": "Neu",
+            "translation": "",
+            "cefr_level": "A2",
+        },
+    )
+    rows = client.get("/api/words?category=geo&cefr_level=A2").get_json()
+    assert isinstance(rows, list)
+    assert len(rows) == 1
+    assert rows[0]["german_label"] == "x"
+
+
+def test_invalid_cefr_level_filter_returns_400(client: FlaskClient) -> None:
+    res = client.get("/api/words?cefr_level=B3")
+    assert res.status_code == 400
+
+
+def test_invalid_cefr_level_on_create(client: FlaskClient) -> None:
+    data, code = _post_json(
+        client,
+        {
+            "german_label": "x",
+            "category": "",
+            "difficulty": "Neu",
+            "translation": "",
+            "cefr_level": "B3",
+        },
+    )
+    assert code == 400
+    assert "error" in data
+
+
 def test_list_filter_by_category(client: FlaskClient) -> None:
     _post_json(
         client,
@@ -97,6 +203,17 @@ def test_invalid_difficulty_on_create(client: FlaskClient) -> None:
             "translation": "",
         },
     )
+    assert code == 400
+    assert "error" in data
+
+
+def test_invalid_cefr_level_on_patch(client: FlaskClient) -> None:
+    created, _ = _post_json(
+        client,
+        {"german_label": "x", "category": "", "difficulty": "Neu", "translation": ""},
+    )
+    wid = created["id"]
+    data, code = _patch_json(client, wid, {"cefr_level": "X9"})
     assert code == 400
     assert "error" in data
 

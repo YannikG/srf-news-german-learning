@@ -115,12 +115,15 @@ class OllamaIdleService:
 
         Does not change ``refcount``. If a request is still in flight, this is a
         hard stop: the sidecar stops the container and in-flight calls fail.
+
+        The sidecar HTTP call can block for tens of seconds; it must not run while
+        holding ``_lock`` or other threads (SSE, ``sse_public_state``) can stall.
         """
         with self._lock:
             self._idle_epoch += 1
             self._shutdown_deadline = None
             self._warning_fired = False
-            ok, err = self._stop_fn()
+        ok, err = self._stop_fn()
         if not ok:
             logger.warning("Ollama go-to-sleep stop failed: %s", err)
         self._notify_state_observers()

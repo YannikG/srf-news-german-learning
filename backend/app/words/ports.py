@@ -15,7 +15,12 @@ class WordsRepositoryPort(Protocol):
     def ids_in_lexicon(self, ids: Sequence[int]) -> set[int]:
         """Return the subset of ``ids`` that exist as ``words.id`` (empty ``ids`` → empty set)."""
 
-    def list(self, *, category: str | None = None) -> list[dict[str, Any]]: ...
+    def list(
+        self,
+        *,
+        category: str | None = None,
+        cefr_level: str | None = None,
+    ) -> list[dict[str, Any]]: ...
 
     def get(self, word_id: int) -> dict[str, Any] | None: ...
 

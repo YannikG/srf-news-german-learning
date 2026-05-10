@@ -5,6 +5,7 @@ from __future__ import annotations
 import threading
 import time
 from collections.abc import Callable
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import httpx
 
@@ -13,6 +14,16 @@ from .defaults import DEFAULT_TOKEN_URL, DEFAULT_USER_AGENT
 TOKEN_URL = DEFAULT_TOKEN_URL
 USER_AGENT = DEFAULT_USER_AGENT
 _DEFAULT_EXPIRES_IN = 3600
+
+
+def _token_url_with_grant_query(token_url: str) -> str:
+    """SRG expects ``grant_type=client_credentials`` in the URL query and an empty POST body."""
+    parts = urlsplit(token_url.strip())
+    parsed = parse_qsl(parts.query, keep_blank_values=True)
+    q_pairs = [(k, v) for k, v in parsed if k != "grant_type"]
+    q_pairs.append(("grant_type", "client_credentials"))
+    query = urlencode(q_pairs)
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, query, parts.fragment))
 
 
 class SrgOAuthClientError(Exception):
@@ -101,13 +112,14 @@ class SrgOAuthClient:
 
     def _do_token_request(self) -> tuple[str, float]:
         try:
+            url = _token_url_with_grant_query(self._token_url)
             response = self._client.post(
-                self._token_url,
+                url,
                 auth=(self._consumer_key, self._consumer_secret),
-                data={"grant_type": "client_credentials"},
+                content=b"",
                 headers={
-                    "Content-Type": "application/x-www-form-urlencoded",
                     "User-Agent": self._user_agent,
+                    "Cache-Control": "no-cache",
                 },
             )
         except httpx.RequestError as exc:

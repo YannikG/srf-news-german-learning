@@ -40,6 +40,9 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD gosu appuser python -c "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3).status == 200 else 1)"
 
 ENTRYPOINT ["/docker-entrypoint-web.sh"]
-# ``--timeout 0``: sync workers otherwise hit WORKER TIMEOUT while serving long-lived SSE
-# (``GET /api/events/stream``); default 30s kills the worker during ``queue.get`` between pings.
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "0", "wsgi:app"]
+# ``--timeout 0``: avoid killing workers during long-lived SSE (``GET /api/events/stream``).
+# ``gthread``: each worker process serves many concurrent requests on threads; one thread can
+# hold the SSE stream while others still answer ``GET /api/health`` and the rest of the API.
+# Rapid browser reloads otherwise open several EventSources briefly and exhaust pure ``sync``
+# workers (everything queues until the 15s client health timeout).
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "-k", "gthread", "--workers", "2", "--threads", "16", "--timeout", "0", "wsgi:app"]

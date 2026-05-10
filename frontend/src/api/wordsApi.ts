@@ -16,10 +16,16 @@ async function readErrorMessage(res: Response): Promise<string> {
   return message;
 }
 
-export async function listWords(params: { category?: string }): Promise<ListWordsResult> {
+export async function listWords(params: {
+  category?: string;
+  cefr_level?: string;
+}): Promise<ListWordsResult> {
   const search = new URLSearchParams();
   if (params.category?.trim()) {
     search.set('category', params.category.trim());
+  }
+  if (params.cefr_level?.trim()) {
+    search.set('cefr_level', params.cefr_level.trim());
   }
   const qs = search.toString();
   const path = qs ? `/api/words?${qs}` : '/api/words';
