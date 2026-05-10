@@ -39,7 +39,7 @@ Spec themes from P7-I01 and where they are exercised in `backend/tests/`:
 
 | Theme | Tests (indicative) |
 |-------|-------------------|
-| Refresh cooldown and boundaries, skip second upstream call within window | `test_news_refresh.py` (`test_second_refresh_within_cooldown_skips_articles_http`, `test_cooldown_allows_fetch_at_exactly_900_seconds`, corrupt metadata) |
+| Refresh cooldown and boundaries, skip second upstream call within window | `test_news_refresh.py` (`test_second_refresh_within_cooldown_skips_articles_http`, `test_cooldown_allows_fetch_at_exactly_900_seconds`, `test_corrupt_last_fetch_metadata_does_not_block_refresh`) |
 | Duplicate refresh / idempotent upsert | `test_news_refresh.py` (`test_duplicate_external_id_is_idempotent`) |
 | SRG OAuth and HTTP edge cases | `test_srg_oauth_client.py`, `test_news_refresh.py` (401, 429 on articles) |
 | Ollama idle timer, warning, cancel | `test_ollama_idle.py` |
