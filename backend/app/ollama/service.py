@@ -158,11 +158,18 @@ class OllamaIdleService:
             # Hold the lock across ``_stop_fn`` so ``begin_request`` cannot bump
             # refcount/epoch between the last check and the sidecar stop (HTTP may
             # block for tens of seconds; new callers wait until stop returns).
+            # Never call ``_notify_state_observers`` while holding ``_lock``: listeners
+            # may call ``sse_public_state()`` which re-acquires the same non-reentrant lock.
+            skip_stop = False
+            ok, err = True, None
             with self._lock:
                 if self._refcount > 0 or self._idle_epoch != epoch_snapshot:
-                    self._notify_state_observers()
-                    return
-                ok, err = self._stop_fn()
+                    skip_stop = True
+                else:
+                    ok, err = self._stop_fn()
+            if skip_stop:
+                self._notify_state_observers()
+                return
             if not ok:
                 logger.warning("Ollama idle shutdown stop failed: %s", err)
             self._notify_state_observers()

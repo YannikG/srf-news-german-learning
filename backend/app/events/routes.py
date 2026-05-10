@@ -28,12 +28,14 @@ def events_stream() -> Response:
     if hub is None:
         return Response("events hub not configured\n", status=503, mimetype="text/plain")
 
-    svc = _idle_service()
-    initial: list[tuple[str, dict[str, object]]] = []
-    if svc is not None:
-        initial.append(("ollama_state", svc.sse_public_state()))
+    def initial_events_fn() -> list[tuple[str, dict[str, object]]]:
+        svc_inner = _idle_service()
+        rows: list[tuple[str, dict[str, object]]] = []
+        if svc_inner is not None:
+            rows.append(("ollama_state", svc_inner.sse_public_state()))
+        return rows
 
-    gen = hub.stream_events(initial_events=initial)
+    gen = hub.stream_events(initial_events_fn=initial_events_fn)
 
     headers = {
         "Cache-Control": "no-cache",

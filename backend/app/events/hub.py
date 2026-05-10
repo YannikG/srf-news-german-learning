@@ -7,7 +7,7 @@ import json
 import queue
 import re
 import threading
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 
 # Internal publishers only; still reject names that would break the SSE wire format.
 _SSE_EVENT_NAME = re.compile(r"^[a-z][a-z0-9_]{0,62}$")
@@ -56,13 +56,17 @@ class SseHub:
     def stream_events(
         self,
         *,
-        initial_events: list[tuple[str, dict[str, object]]],
+        initial_events_fn: Callable[[], list[tuple[str, dict[str, object]]]],
         ping_interval_s: float = 25.0,
     ) -> Iterator[str]:
-        """Yield SSE chunks for one client; *initial_events* are sent first."""
+        """Yield SSE chunks for one client.
+
+        ``initial_events_fn`` runs only after this client is subscribed so publishes
+        between subscription and the first snapshot are not dropped.
+        """
         q = self.subscribe()
         try:
-            for ev, payload in initial_events:
+            for ev, payload in initial_events_fn():
                 yield format_sse(ev, payload)
             while True:
                 try:
