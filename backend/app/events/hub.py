@@ -5,12 +5,22 @@ from __future__ import annotations
 import contextlib
 import json
 import queue
+import re
 import threading
 from collections.abc import Iterator
+
+# Internal publishers only; still reject names that would break the SSE wire format.
+_SSE_EVENT_NAME = re.compile(r"^[a-z][a-z0-9_]{0,62}$")
+
+
+def _validate_event_name(event: str) -> None:
+    if not _SSE_EVENT_NAME.fullmatch(event):
+        raise ValueError(f"invalid SSE event name: {event!r}")
 
 
 def format_sse(event: str, data: dict[str, object]) -> str:
     """Return one SSE message block (event + JSON data, no secrets in *data*)."""
+    _validate_event_name(event)
     payload = json.dumps(data, separators=(",", ":"))
     return f"event: {event}\ndata: {payload}\n\n"
 
@@ -33,12 +43,14 @@ class SseHub:
             self._queues.remove(q)
 
     def publish(self, event: str, data: dict[str, object]) -> None:
+        _validate_event_name(event)
         with self._lock:
             targets = list(self._queues)
         for target in targets:
             try:
                 target.put_nowait((event, data))
             except queue.Full:
+                # Slow consumer; drop rather than block publishers (idle events are low volume).
                 continue
 
     def stream_events(

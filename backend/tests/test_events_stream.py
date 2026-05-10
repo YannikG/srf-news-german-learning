@@ -11,6 +11,7 @@ import pytest
 from werkzeug.serving import make_server
 
 from app import create_app
+from app.events.hub import SseHub
 from app.ollama import OLLAMA_IDLE_SERVICE_KEY
 from app.ollama.service import OllamaIdleService
 from app.persistence import SQL_DATABASE_EXTENSION_KEY
@@ -122,7 +123,7 @@ def test_events_stream_receives_cancel_events(live_sse_app) -> None:
                 if saw_cancel.is_set() and buf_holder["buf"].count(b"event: ollama_state") >= 2:
                     break
 
-    th = threading.Thread(target=reader)
+    th = threading.Thread(target=reader, daemon=True)
     th.start()
     assert connected.wait(timeout=5)
     time.sleep(0.05)
@@ -171,8 +172,8 @@ def test_events_stream_shutdown_warning_then_state(live_sse_app_short_idle) -> N
         time.sleep(2.1)
         svc.poll()
 
-    th_reader = threading.Thread(target=reader)
-    th_idle = threading.Thread(target=idle_sequence)
+    th_reader = threading.Thread(target=reader, daemon=True)
+    th_idle = threading.Thread(target=idle_sequence, daemon=True)
     th_reader.start()
     th_idle.start()
     assert done.wait(timeout=8)
@@ -180,3 +181,9 @@ def test_events_stream_shutdown_warning_then_state(live_sse_app_short_idle) -> N
     th_idle.join(timeout=5)
     assert b"shutdown_warning" in buf_holder["buf"]
     assert b'"warning_seconds":1' in buf_holder["buf"]
+
+
+def test_sse_hub_rejects_invalid_event_name() -> None:
+    hub = SseHub()
+    with pytest.raises(ValueError, match="invalid SSE event name"):
+        hub.publish("bad\nname", {})

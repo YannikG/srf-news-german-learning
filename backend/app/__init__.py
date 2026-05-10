@@ -1,11 +1,9 @@
 """Flask application factory.
 
 Registers health, dictionary, article read, news refresh, settings, Ollama idle,
-and SSE events blueprints;
-bootstraps ``app.db`` on first start when the file at ``DATABASE_PATH`` is missing,
-and accepts an optional
-``test_config`` map so tests and environments can inject settings without mutating an
-already-built app.
+and SSE stream blueprints. Bootstraps ``app.db`` on first start when the file at
+``DATABASE_PATH`` is missing, and accepts an optional ``test_config`` map so tests
+and environments can inject settings without mutating an already-built app.
 """
 
 from __future__ import annotations
