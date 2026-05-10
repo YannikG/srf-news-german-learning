@@ -33,7 +33,7 @@ def _with_active_ingest_provider(row: dict[str, Any]) -> dict[str, Any]:
     """Merge read-only config derived fields (not stored in ``settings`` table)."""
     return {
         **row,
-        "active_ingest_provider": str(current_app.config.get("NEWS_ACTIVE_PROVIDER") or "srgssr"),
+        "active_ingest_provider": current_app.config["NEWS_ACTIVE_PROVIDER"],
     }
 
 
