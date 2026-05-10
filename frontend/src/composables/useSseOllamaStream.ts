@@ -168,6 +168,33 @@ export function useSseOllamaStream() {
     }
   }
 
+  async function startOllama(): Promise<{ ok: boolean; message?: string }> {
+    try {
+      const res = await fetch(buildApiUrl('/api/ollama/start'), {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) {
+        const message = await readErrorDetail(res);
+        return { ok: false, message };
+      }
+      const body: unknown = await res.json().catch(() => null);
+      if (isRecord(body) && body.ok === false) {
+        const detail = body.detail;
+        return {
+          ok: false,
+          message: typeof detail === 'string' ? detail : 'Ollama konnte nicht gestartet werden.',
+        };
+      }
+      return { ok: true };
+    } catch (err) {
+      return {
+        ok: false,
+        message: err instanceof Error ? err.message : 'Netzwerkfehler',
+      };
+    }
+  }
+
   return {
     ollamaState,
     ollamaBusy,
@@ -176,6 +203,7 @@ export function useSseOllamaStream() {
     shutdownWarningSeconds,
     cancelIdleShutdown,
     goToSleep,
+    startOllama,
   };
 }
 

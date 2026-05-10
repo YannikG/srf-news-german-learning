@@ -21,6 +21,7 @@ const {
   shutdownWarningSeconds,
   cancelIdleShutdown,
   goToSleep,
+  startOllama,
 } = useSseOllamaStream();
 
 const showBusy = computed(() => health.value.kind === 'loading' || ollamaBusy.value);
@@ -62,6 +63,26 @@ async function onGoToSleep() {
     summary: 'Ruhezustand',
     detail: 'Ollama wurde gestoppt.',
     life: 4000,
+  });
+}
+
+async function onStartOllama() {
+  const r = await startOllama();
+  if (!r.ok) {
+    toast.add({
+      severity: 'error',
+      summary: 'Ollama starten',
+      detail: r.message ?? 'Ollama konnte nicht gestartet werden.',
+      life: 6000,
+    });
+    return;
+  }
+  toast.add({
+    severity: 'success',
+    summary: 'Ollama starten',
+    detail:
+      'Der Start wurde ausgelöst. Je nach Modell kann es etwas dauern, bis Ollama wieder bereit ist.',
+    life: 5000,
   });
 }
 </script>
@@ -119,18 +140,28 @@ async function onGoToSleep() {
               Einstellungen
             </RouterLink>
           </nav>
-          <Button
-            v-if="ollamaState !== null"
-            label="Ruhezustand"
-            severity="secondary"
-            size="small"
-            outlined
-            :disabled="!sleepEnabled"
-            :title="
-              sleepEnabled ? 'Ollama jetzt stoppen' : 'Nur verfügbar wenn Sidecar konfiguriert ist.'
-            "
-            @click="onGoToSleep"
-          />
+          <div
+            v-if="ollamaState !== null && sleepEnabled"
+            class="flex flex-wrap items-center gap-2"
+            aria-label="Ollama Steuerung"
+          >
+            <Button
+              label="Ruhezustand"
+              severity="secondary"
+              size="small"
+              outlined
+              title="Ollama jetzt stoppen (Sidecar)"
+              @click="onGoToSleep"
+            />
+            <Button
+              label="Ollama starten"
+              severity="secondary"
+              size="small"
+              outlined
+              title="Ollama-Container über das Sidecar starten"
+              @click="onStartOllama"
+            />
+          </div>
         </div>
       </div>
     </header>
