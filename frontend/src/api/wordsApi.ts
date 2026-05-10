@@ -24,7 +24,10 @@ export async function listWords(params: { category?: string }): Promise<ListWord
   const qs = search.toString();
   const path = qs ? `/api/words?${qs}` : '/api/words';
   try {
-    const res = await fetch(buildApiUrl(path), { headers: { Accept: 'application/json' } });
+    const res = await fetch(buildApiUrl(path), {
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    });
     if (!res.ok) {
       return { ok: false, status: res.status, message: await readErrorMessage(res) };
     }

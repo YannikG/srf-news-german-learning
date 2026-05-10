@@ -15,6 +15,8 @@ function mergeKnownCategories(existing: string[], words: Word[]): string[] {
  * Loads and mutates dictionary rows; ``categoryFilter`` maps to ``GET /api/words?category=``.
  * After create/update, merges the server row into ``knownCategories`` so the filter list stays
  * complete even when the active filter hides the new or updated row.
+ * If the active category filter would exclude the saved row, the filter is cleared so the table
+ * can show the new or moved entry without a full page reload.
  */
 export function useWordsDictionary() {
   const items = ref<Word[]>([]);
@@ -64,6 +66,12 @@ export function useWordsDictionary() {
       return { ok: false, message: res.message };
     }
     knownCategories.value = mergeKnownCategories(knownCategories.value, [res.data]);
+    const newCat = res.data.category.trim();
+    const filter = categoryFilter.value.trim();
+    if (filter && newCat !== filter) {
+      categoryFilter.value = '';
+      return { ok: true };
+    }
     await load();
     return { ok: true };
   }
@@ -77,6 +85,12 @@ export function useWordsDictionary() {
       return { ok: false, message: res.message };
     }
     knownCategories.value = mergeKnownCategories(knownCategories.value, [res.data]);
+    const newCat = res.data.category.trim();
+    const filter = categoryFilter.value.trim();
+    if (filter && newCat !== filter) {
+      categoryFilter.value = '';
+      return { ok: true };
+    }
     await load();
     return { ok: true };
   }
