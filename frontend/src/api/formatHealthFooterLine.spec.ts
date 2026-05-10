@@ -19,6 +19,30 @@ describe('formatHealthFooterLine', () => {
     ).toBe('API: OK · Sidecar: OK');
   });
 
+  it('labels inspect_error from SSE health fallback', () => {
+    expect(
+      formatHealthFooterLine({
+        kind: 'ok',
+        payload: {
+          ok: true,
+          sidecar: { status: 'ok', ollama: { state: 'inspect_error' } },
+        },
+      })
+    ).toBe('API: OK · Sidecar: OK · Ollama: Sidecar-Inspect fehlgeschlagen');
+  });
+
+  it('includes Ollama container state when sidecar inspect returns it', () => {
+    expect(
+      formatHealthFooterLine({
+        kind: 'ok',
+        payload: {
+          ok: true,
+          sidecar: { status: 'ok', ollama: { state: 'exited', name: '/x' } },
+        },
+      })
+    ).toBe('API: OK · Sidecar: OK · Ollama: gestoppt');
+  });
+
   it('formats ok without sidecar', () => {
     expect(
       formatHealthFooterLine({

@@ -12,14 +12,23 @@ import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { reactive, ref, type Ref } from 'vue';
 import { useWordsDictionary } from '@/composables/useWordsDictionary';
-import type { Word, WordDifficulty } from '@/types/word';
-import { WORD_DIFFICULTIES } from '@/types/word';
+import type { CefrLevel, Word, WordDifficulty } from '@/types/word';
+import { CEFR_LEVEL_FILTER_NONE, CEFR_LEVELS, WORD_DIFFICULTIES } from '@/types/word';
 
 const toast = useToast();
 const confirm = useConfirm();
 
-const { items, loading, error, categoryFilter, knownCategories, create, update, remove } =
-  useWordsDictionary();
+const {
+  items,
+  loading,
+  error,
+  categoryFilter,
+  cefrLevelFilter,
+  knownCategories,
+  create,
+  update,
+  remove,
+} = useWordsDictionary();
 
 const dialogVisible = ref(false);
 const editingId = ref<number | null>(null);
@@ -28,12 +37,30 @@ const form = reactive({
   category: '',
   translation: '',
   difficulty: 'Neu' as WordDifficulty,
-  cefr_level: '',
+  cefr_level: null as CefrLevel | null,
 });
 const labelError = ref<string | null>(null);
 const saveInFlight = ref(false);
 
 const difficultySelectOptions = WORD_DIFFICULTIES.map((d) => ({ label: d, value: d }));
+
+const cefrLevelToolbarOptions = [
+  { label: 'Alle Level', value: '' },
+  { label: 'Kein Level', value: CEFR_LEVEL_FILTER_NONE },
+  ...CEFR_LEVELS.map((level) => ({ label: level, value: level })),
+];
+
+const cefrFormSelectOptions = [
+  { label: 'Kein Level', value: null },
+  ...CEFR_LEVELS.map((level) => ({ label: level, value: level })),
+];
+
+function toFormCefr(value: Word['cefr_level']): CefrLevel | null {
+  if (value == null) {
+    return null;
+  }
+  return (CEFR_LEVELS as readonly string[]).includes(value) ? (value as CefrLevel) : null;
+}
 
 const toolbarCategorySuggestions = ref<string[]>([]);
 const dialogCategorySuggestions = ref<string[]>([]);
@@ -66,7 +93,7 @@ function resetForm() {
   form.category = '';
   form.translation = '';
   form.difficulty = 'Neu';
-  form.cefr_level = '';
+  form.cefr_level = null;
   labelError.value = null;
 }
 
@@ -82,7 +109,7 @@ function openEdit(row: Word) {
   form.category = row.category;
   form.translation = row.translation;
   form.difficulty = row.difficulty;
-  form.cefr_level = row.cefr_level ?? '';
+  form.cefr_level = toFormCefr(row.cefr_level);
   labelError.value = null;
   dialogVisible.value = true;
 }
@@ -107,7 +134,6 @@ async function saveDialog() {
     return;
   }
   labelError.value = null;
-  const cefr = form.cefr_level.trim() || null;
   saveInFlight.value = true;
   try {
     if (editingId.value == null) {
@@ -116,7 +142,7 @@ async function saveDialog() {
         category: form.category.trim(),
         translation: form.translation.trim(),
         difficulty: form.difficulty,
-        cefr_level: cefr,
+        cefr_level: form.cefr_level,
       });
       if (!res.ok) {
         toast.add({ severity: 'error', summary: 'Speichern', detail: res.message, life: 6000 });
@@ -129,7 +155,7 @@ async function saveDialog() {
         category: form.category.trim(),
         translation: form.translation.trim(),
         difficulty: form.difficulty,
-        cefr_level: cefr,
+        cefr_level: form.cefr_level,
       });
       if (!res.ok) {
         toast.add({ severity: 'error', summary: 'Speichern', detail: res.message, life: 6000 });
@@ -189,6 +215,20 @@ function confirmDelete(row: Word) {
             :show-clear="true"
             complete-on-focus
             @complete="onToolbarCategoryComplete"
+          />
+        </div>
+        <div class="flex min-w-0 flex-col gap-1">
+          <label class="text-xs font-medium text-slate-600" for="dict-cefr-filter"
+            >CEFR-Level</label
+          >
+          <Select
+            id="dict-cefr-filter"
+            v-model="cefrLevelFilter"
+            :options="cefrLevelToolbarOptions"
+            option-label="label"
+            option-value="value"
+            placeholder="Alle Level"
+            class="w-full min-w-[10rem] sm:w-44"
           />
         </div>
         <Button type="button" label="Neues Wort" class="shrink-0" @click="openCreate" />
@@ -300,8 +340,17 @@ function confirmDelete(row: Word) {
           <Textarea id="wf-tr" v-model="form.translation" rows="3" class="w-full" auto-resize />
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-xs font-medium text-slate-700" for="wf-cefr">CEFR (optional)</label>
-          <InputText id="wf-cefr" v-model="form.cefr_level" class="w-full" autocomplete="off" />
+          <label class="text-xs font-medium text-slate-700" for="wf-cefr">CEFR-Level</label>
+          <Select
+            id="wf-cefr"
+            v-model="form.cefr_level"
+            :options="cefrFormSelectOptions"
+            option-label="label"
+            option-value="value"
+            placeholder="Kein Level"
+            class="w-full"
+            :show-clear="true"
+          />
         </div>
       </div>
       <template #footer>

@@ -32,7 +32,12 @@ def _words_service() -> WordsService:
 @words_bp.get("/words")
 def list_words() -> tuple[Response, int]:
     category = None if "category" not in request.args else request.args.get("category", "")
-    items = _words_service().list_words(category=category)
+    cefr_level: str | None = None
+    if "cefr_level" in request.args:
+        raw = request.args.get("cefr_level", "").strip()
+        if raw:
+            cefr_level = raw
+    items = _words_service().list_words(category=category, cefr_level=cefr_level)
     return jsonify(items), 200
 
 

@@ -1,16 +1,173 @@
 <script setup lang="ts">
+import Button from 'primevue/button';
 import ConfirmDialog from 'primevue/confirmdialog';
+import Dialog from 'primevue/dialog';
 import Toast from 'primevue/toast';
+import { useToast } from 'primevue/usetoast';
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { formatOllamaContainerStateLabel } from '@/api/formatHealthFooterLine';
 import { useApiHealthPoll } from '@/composables/useApiHealthPoll';
+import { useSseOllamaStream } from '@/composables/useSseOllamaStream';
 
 const route = useRoute();
-const { health, statusLine } = useApiHealthPoll();
+const toast = useToast();
+const { health, statusLine, refresh: refreshHealth } = useApiHealthPoll();
+const {
+  ollamaState,
+  ollamaContainerFromStream,
+  clearOllamaContainerFromStream,
+  streamPreview,
+  shutdownDialogOpen,
+  shutdownWarningSeconds,
+  cancelIdleShutdown,
+  goToSleep,
+  startOllama,
+} = useSseOllamaStream();
+
+const showStreamBox = computed(() => streamPreview.value.length > 0);
+const sleepEnabled = computed(() => ollamaState.value?.idle_enabled === true);
+
+/** Prefer SSE ``ollama_container``, else health sidecar inspect (poll). */
+const effectiveOllamaDockerState = computed(() => {
+  const sse = ollamaContainerFromStream.value?.state;
+  if (sse) {
+    return sse;
+  }
+  const h = health.value;
+  if (h.kind !== 'ok') {
+    return undefined;
+  }
+  const sc = h.payload.sidecar;
+  if (!sc || sc.status !== 'ok') {
+    return undefined;
+  }
+  return sc.ollama?.state;
+});
+
+const ollamaDockerRunning = computed(() => effectiveOllamaDockerState.value === 'running');
+
+const ollamaPowerLabel = computed(() =>
+  ollamaDockerRunning.value ? 'Ollama stoppen' : 'Ollama starten'
+);
+
+const ollamaPowerTitle = computed(() =>
+  ollamaDockerRunning.value
+    ? 'Ollama-Container jetzt stoppen (Ruhezustand)'
+    : 'Ollama-Container über das Sidecar starten'
+);
+
+const ollamaPowerAriaLabel = computed(() => ollamaPowerLabel.value);
+
+/** Docker container state: SSE ``ollama_container`` (after start) else ``GET /api/health`` (poll ~30s). */
+const ollamaRuntimeLine = computed(() => {
+  const sse = ollamaContainerFromStream.value;
+  if (sse?.state) {
+    return `Ollama-Container: ${formatOllamaContainerStateLabel(sse.state)}`;
+  }
+  const h = health.value;
+  if (h.kind !== 'ok') {
+    return null;
+  }
+  const sc = h.payload.sidecar;
+  if (!sc || sc.status !== 'ok') {
+    return null;
+  }
+  const st = sc.ollama?.state;
+  if (!st) {
+    return null;
+  }
+  return `Ollama-Container: ${formatOllamaContainerStateLabel(st)}`;
+});
+
+async function onCancelShutdown() {
+  const r = await cancelIdleShutdown();
+  if (!r.ok) {
+    toast.add({
+      severity: 'error',
+      summary: 'Abbruch fehlgeschlagen',
+      detail: r.message ?? 'Unbekannter Fehler',
+      life: 6000,
+    });
+    return;
+  }
+  toast.add({
+    severity: 'success',
+    summary: 'Automatischer Stopp abgebrochen',
+    detail: 'Ollama bleibt vorerst aktiv.',
+    life: 4000,
+  });
+}
+
+async function onStartOllama() {
+  const r = await startOllama();
+  if (!r.ok) {
+    toast.add({
+      severity: 'error',
+      summary: 'Ollama starten',
+      detail: r.message ?? 'Ollama konnte nicht gestartet werden.',
+      life: 6000,
+    });
+    return;
+  }
+  toast.add({
+    severity: 'success',
+    summary: 'Ollama starten',
+    detail:
+      'Der Start wurde ausgelöst. Je nach Modell kann es etwas dauern, bis Ollama wieder bereit ist.',
+    life: 5000,
+  });
+  void refreshHealth();
+}
+
+async function onStopOllama() {
+  const r = await goToSleep();
+  if (!r.ok) {
+    toast.add({
+      severity: 'error',
+      summary: 'Ollama stoppen',
+      detail: r.message ?? 'Ollama konnte nicht gestoppt werden.',
+      life: 6000,
+    });
+    return;
+  }
+  clearOllamaContainerFromStream();
+  toast.add({
+    severity: 'success',
+    summary: 'Ollama stoppen',
+    detail: 'Ollama wurde in den Ruhezustand versetzt.',
+    life: 4000,
+  });
+  void refreshHealth();
+}
+
+async function onOllamaPowerClick() {
+  if (ollamaDockerRunning.value) {
+    await onStopOllama();
+  } else {
+    await onStartOllama();
+  }
+}
 </script>
 
 <template>
   <Toast position="top-center" />
   <ConfirmDialog />
+  <Dialog
+    v-model:visible="shutdownDialogOpen"
+    modal
+    header="Ollama wird gestoppt"
+    :closable="false"
+    :draggable="false"
+  >
+    <p class="text-sm text-slate-700">
+      Ollama wird in etwa {{ shutdownWarningSeconds }} Sekunden automatisch gestoppt. Mit «Abbruch»
+      bleibt der Dienst vorerst aktiv.
+    </p>
+    <template #footer>
+      <Button label="Abbruch" severity="secondary" @click="onCancelShutdown" />
+    </template>
+  </Dialog>
   <div class="flex min-h-screen flex-col bg-slate-50">
     <header class="border-b border-slate-200 bg-white shadow-sm">
       <div
@@ -22,31 +179,65 @@ const { health, statusLine } = useApiHealthPoll();
           </h1>
           <p class="text-xs text-slate-500 sm:text-sm">News und Lernmodus</p>
         </div>
-        <nav class="flex flex-wrap gap-2 text-sm sm:justify-end" aria-label="Hauptnavigation">
-          <RouterLink
-            to="/"
-            class="rounded-md px-3 py-2 font-medium text-slate-700 hover:bg-slate-100"
-            active-class="bg-slate-200 text-slate-900"
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <nav class="flex flex-wrap gap-2 text-sm sm:justify-end" aria-label="Hauptnavigation">
+            <RouterLink
+              to="/"
+              class="rounded-md px-3 py-2 font-medium text-slate-700 hover:bg-slate-100"
+              active-class="bg-slate-200 text-slate-900"
+            >
+              News
+            </RouterLink>
+            <RouterLink
+              to="/woerterbuch"
+              class="rounded-md px-3 py-2 font-medium text-slate-700 hover:bg-slate-100"
+              active-class="bg-slate-200 text-slate-900"
+            >
+              Wörterbuch
+            </RouterLink>
+            <RouterLink
+              to="/einstellungen"
+              class="rounded-md px-3 py-2 font-medium text-slate-700 hover:bg-slate-100"
+              active-class="bg-slate-200 text-slate-900"
+            >
+              Einstellungen
+            </RouterLink>
+          </nav>
+          <div
+            v-if="ollamaState !== null && sleepEnabled"
+            class="flex flex-col items-stretch gap-1 sm:items-end"
           >
-            News
-          </RouterLink>
-          <RouterLink
-            to="/woerterbuch"
-            class="rounded-md px-3 py-2 font-medium text-slate-700 hover:bg-slate-100"
-            active-class="bg-slate-200 text-slate-900"
-          >
-            Wörterbuch
-          </RouterLink>
-          <RouterLink
-            to="/einstellungen"
-            class="rounded-md px-3 py-2 font-medium text-slate-700 hover:bg-slate-100"
-            active-class="bg-slate-200 text-slate-900"
-          >
-            Einstellungen
-          </RouterLink>
-        </nav>
+            <p
+              v-if="ollamaRuntimeLine"
+              class="text-right text-xs text-slate-500"
+              role="status"
+              data-testid="ollama-runtime-status"
+            >
+              {{ ollamaRuntimeLine }}
+            </p>
+            <Button
+              :label="ollamaPowerLabel"
+              severity="secondary"
+              size="small"
+              outlined
+              class="self-stretch sm:self-end"
+              :title="ollamaPowerTitle"
+              :aria-label="ollamaPowerAriaLabel"
+              @click="onOllamaPowerClick"
+            />
+          </div>
+        </div>
       </div>
     </header>
+    <section v-if="showStreamBox" class="border-b border-slate-200 bg-white" aria-live="polite">
+      <div class="mx-auto max-w-5xl px-3 py-2 sm:px-4">
+        <div
+          class="max-h-40 overflow-y-auto rounded-md border border-slate-200 bg-slate-50 p-3 text-left text-xs leading-relaxed text-slate-600"
+        >
+          <pre class="whitespace-pre-wrap font-sans">{{ streamPreview }}</pre>
+        </div>
+      </div>
+    </section>
     <main class="flex-1">
       <RouterView :key="route.fullPath" />
     </main>

@@ -122,6 +122,15 @@ class NewsRefreshService:
                     429,
                     code="upstream_rate_limited",
                 ) from exc
+            detail = (exc.body or "").strip().replace("\r\n", " ").replace("\n", " ")
+            if len(detail) > 400:
+                detail = detail[:400] + "…"
+            if detail:
+                raise NewsRefreshError(
+                    f"SRG OAuth token request failed (HTTP {exc.status_code}): {detail}",
+                    502,
+                    code="upstream_error",
+                ) from exc
             raise NewsRefreshError(
                 f"SRG OAuth token request failed (HTTP {exc.status_code}).",
                 502,

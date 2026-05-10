@@ -19,6 +19,11 @@ venv/
 env/
 .tmp-venv/
 
+# Local env files (examples like ``.env.example`` stay tracked)
+.env
+.env.local
+local.env
+
 # Local data and runtime artefacts
 *.sqlite
 *.sqlite3

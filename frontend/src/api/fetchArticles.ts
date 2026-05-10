@@ -10,6 +10,7 @@ export async function fetchArticlesList(params: {
   q?: string;
   cursor?: string | null;
   limit?: number;
+  signal?: AbortSignal;
 }): Promise<FetchArticlesListResult> {
   const search = new URLSearchParams();
   if (params.date) search.set('date', params.date);
@@ -19,16 +20,29 @@ export async function fetchArticlesList(params: {
   const qs = search.toString();
   const path = qs ? `/api/articles?${qs}` : '/api/articles';
   try {
-    const res = await fetch(buildApiUrl(path), { headers: { Accept: 'application/json' } });
+    const res = await fetch(buildApiUrl(path), {
+      headers: { Accept: 'application/json' },
+      signal: params.signal,
+    });
     if (!res.ok) {
       return { ok: false, status: res.status, message: `HTTP ${res.status}` };
     }
     const data = (await res.json()) as ArticlesListResponse;
     return { ok: true, data };
   } catch (e) {
+    if (isAbortError(e)) {
+      throw e;
+    }
     const message = e instanceof Error ? e.message : 'Netzwerkfehler';
     return { ok: false, status: 0, message };
   }
+}
+
+export function isAbortError(e: unknown): boolean {
+  return (
+    (typeof DOMException !== 'undefined' && e instanceof DOMException && e.name === 'AbortError') ||
+    (e instanceof Error && e.name === 'AbortError')
+  );
 }
 
 export type FetchArticleDetailResult =

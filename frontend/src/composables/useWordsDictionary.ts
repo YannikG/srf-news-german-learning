@@ -1,12 +1,31 @@
 import { ref, watch } from 'vue';
 import { createWord, deleteWord, listWords, patchWord } from '@/api/wordsApi';
 import type { Word, WordCreatePayload, WordPatchPayload } from '@/types/word';
+import { CEFR_LEVEL_FILTER_NONE } from '@/types/word';
 
 function trimCategoryFilter(value: unknown): string {
   if (value == null || typeof value !== 'string') {
     return '';
   }
   return value.trim();
+}
+
+function trimCefrFilter(value: unknown): string {
+  if (value == null || typeof value !== 'string') {
+    return '';
+  }
+  return value.trim();
+}
+
+function rowMatchesCefrFilter(row: Word, filter: string): boolean {
+  const f = trimCefrFilter(filter);
+  if (!f) {
+    return true;
+  }
+  if (f === CEFR_LEVEL_FILTER_NONE) {
+    return row.cefr_level == null;
+  }
+  return row.cefr_level === f;
 }
 
 function mergeKnownCategories(existing: string[], words: Word[]): string[] {
@@ -19,17 +38,17 @@ function mergeKnownCategories(existing: string[], words: Word[]): string[] {
 }
 
 /**
- * Loads and mutates dictionary rows; ``categoryFilter`` maps to ``GET /api/words?category=``.
- * After create/update, merges the server row into ``knownCategories`` so the filter list stays
- * complete even when the active filter hides the new or updated row.
- * If the active category filter would exclude the saved row, the filter is cleared so the table
- * can show the new or moved entry without a full page reload.
+ * Loads and mutates dictionary rows. ``categoryFilter`` maps to ``GET /api/words?category=``,
+ * ``cefrLevelFilter`` to ``GET /api/words?cefr_level=`` (use ``CEFR_LEVEL_FILTER_NONE`` for rows
+ * without a level). After create/update, filters that would hide the saved row are cleared so the
+ * table can show the entry without a full reload.
  */
 export function useWordsDictionary() {
   const items = ref<Word[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
   const categoryFilter = ref('');
+  const cefrLevelFilter = ref('');
   const knownCategories = ref<string[]>([]);
   let loadRequestSeq = 0;
 
@@ -38,8 +57,12 @@ export function useWordsDictionary() {
     loading.value = true;
     error.value = null;
     try {
-      const filter = trimCategoryFilter(categoryFilter.value);
-      const res = await listWords(filter ? { category: filter } : {});
+      const cat = trimCategoryFilter(categoryFilter.value);
+      const cefr = trimCefrFilter(cefrLevelFilter.value);
+      const res = await listWords({
+        ...(cat ? { category: cat } : {}),
+        ...(cefr ? { cefr_level: cefr } : {}),
+      });
       if (seq !== loadRequestSeq) {
         return;
       }
@@ -57,7 +80,7 @@ export function useWordsDictionary() {
   }
 
   watch(
-    categoryFilter,
+    [categoryFilter, cefrLevelFilter],
     () => {
       void load();
     },
@@ -73,9 +96,18 @@ export function useWordsDictionary() {
     }
     knownCategories.value = mergeKnownCategories(knownCategories.value, [res.data]);
     const newCat = res.data.category.trim();
-    const filter = trimCategoryFilter(categoryFilter.value);
-    if (filter && newCat !== filter) {
+    const catFilter = trimCategoryFilter(categoryFilter.value);
+    const cefrF = trimCefrFilter(cefrLevelFilter.value);
+    let cleared = false;
+    if (catFilter && newCat !== catFilter) {
       categoryFilter.value = '';
+      cleared = true;
+    }
+    if (cefrF && !rowMatchesCefrFilter(res.data, cefrF)) {
+      cefrLevelFilter.value = '';
+      cleared = true;
+    }
+    if (cleared) {
       return { ok: true };
     }
     await load();
@@ -92,9 +124,18 @@ export function useWordsDictionary() {
     }
     knownCategories.value = mergeKnownCategories(knownCategories.value, [res.data]);
     const newCat = res.data.category.trim();
-    const filter = trimCategoryFilter(categoryFilter.value);
-    if (filter && newCat !== filter) {
+    const catFilter = trimCategoryFilter(categoryFilter.value);
+    const cefrF = trimCefrFilter(cefrLevelFilter.value);
+    let cleared = false;
+    if (catFilter && newCat !== catFilter) {
       categoryFilter.value = '';
+      cleared = true;
+    }
+    if (cefrF && !rowMatchesCefrFilter(res.data, cefrF)) {
+      cefrLevelFilter.value = '';
+      cleared = true;
+    }
+    if (cleared) {
       return { ok: true };
     }
     await load();
@@ -115,6 +156,7 @@ export function useWordsDictionary() {
     loading,
     error,
     categoryFilter,
+    cefrLevelFilter,
     knownCategories,
     load,
     create,

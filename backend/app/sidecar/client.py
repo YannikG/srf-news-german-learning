@@ -35,8 +35,14 @@ def reset_shared_sidecar_http_client() -> None:
             _shared_sidecar_http = None
 
 
-def probe_sidecar_inspect(base_url: str, shared_secret: str | None) -> tuple[bool, str | None]:
-    """GET /ollama/inspect on the sidecar. Returns (success, error_detail)."""
+def probe_sidecar_inspect(
+    base_url: str, shared_secret: str | None
+) -> tuple[bool, str | None, dict[str, str] | None]:
+    """GET /ollama/inspect on the sidecar.
+
+    Returns ``(success, error_detail, ollama_public)`` where *ollama_public* is a small
+    subset safe for ``GET /api/health`` (``state``, optional ``name``) when HTTP 200.
+    """
     url = f"{base_url.rstrip('/')}/ollama/inspect"
     headers: dict[str, str] = {}
     secret = (shared_secret or "").strip()
@@ -46,12 +52,28 @@ def probe_sidecar_inspect(base_url: str, shared_secret: str | None) -> tuple[boo
         response = _sidecar_http().get(url, headers=headers, timeout=3.0)
     except httpx.RequestError as exc:
         logger.debug("Sidecar probe failed: %s", exc)
-        return False, str(exc)
+        return False, str(exc), None
 
-    if response.status_code == 200:
-        return True, None
-    detail = response.text[:200] if response.text else f"HTTP {response.status_code}"
-    return False, detail
+    if response.status_code != 200:
+        detail = response.text[:200] if response.text else f"HTTP {response.status_code}"
+        return False, detail, None
+
+    ollama_public: dict[str, str] | None = None
+    try:
+        data = response.json()
+        if isinstance(data, dict):
+            raw = data.get("ollama")
+            if isinstance(raw, dict):
+                st = raw.get("state")
+                if isinstance(st, str) and st.strip():
+                    ollama_public = {"state": st.strip()}
+                    nm = raw.get("name")
+                    if isinstance(nm, str) and nm.strip():
+                        ollama_public["name"] = nm.strip()
+    except Exception:
+        ollama_public = None
+
+    return True, None, ollama_public
 
 
 def post_ollama_start(base_url: str, shared_secret: str | None) -> tuple[bool, str | None]:

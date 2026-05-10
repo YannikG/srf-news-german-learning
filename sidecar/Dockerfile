@@ -19,4 +19,6 @@ EXPOSE 8090
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request,sys; r=urllib.request.urlopen('http://127.0.0.1:8090/health', timeout=3); sys.exit(0 if r.status==200 else 1)"
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8090", "--workers", "2", "wsgi:app"]
+# Several sync workers so a long ``docker stop`` on one request does not block all
+# concurrent ``/ollama/inspect`` calls from the web app (health + watcher probes).
+CMD ["gunicorn", "--bind", "0.0.0.0:8090", "--workers", "4", "wsgi:app"]

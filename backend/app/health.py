@@ -22,6 +22,12 @@ def health() -> tuple[Response, int]:
     if base:
         secret = current_app.config.get("SIDECAR_SHARED_SECRET")
         secret_str = secret if isinstance(secret, str) else ""
-        ok, err = probe_sidecar_inspect(base, secret_str or None)
-        payload["sidecar"] = {"status": "ok"} if ok else {"status": "error", "detail": err}
+        ok, err, ollama_public = probe_sidecar_inspect(base, secret_str or None)
+        if ok:
+            sc: dict = {"status": "ok"}
+            if ollama_public:
+                sc["ollama"] = ollama_public
+            payload["sidecar"] = sc
+        else:
+            payload["sidecar"] = {"status": "error", "detail": err}
     return jsonify(payload), 200

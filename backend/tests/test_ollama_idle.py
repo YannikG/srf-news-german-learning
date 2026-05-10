@@ -181,30 +181,74 @@ def test_go_to_sleep_hard_stop_while_refcount_positive() -> None:
 
 
 @pytest.mark.parametrize(
-    ("path", "payload_key"),
+    ("path", "expect_ok_without_sidecar"),
     [
-        ("/api/ollama/cancel-idle-shutdown", "ok"),
-        ("/api/ollama/go-to-sleep", "ok"),
+        ("/api/ollama/cancel-idle-shutdown", True),
+        ("/api/ollama/go-to-sleep", False),
+        ("/api/ollama/start", False),
     ],
 )
-def test_ollama_routes_need_sidecar_for_go_to_sleep_only(
+def test_ollama_routes_sidecar_requirements_without_sidecar_url(
     tmp_path_factory: pytest.TempPathFactory,
     path: str,
-    payload_key: str,
+    expect_ok_without_sidecar: bool,
 ) -> None:
     app = _db_app(tmp_path_factory)
     client = app.test_client()
     response = client.post(path)
-    if path.endswith("go-to-sleep"):
+    if expect_ok_without_sidecar:
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data is not None
+        assert data.get("ok") is True
+    else:
         assert response.status_code == 503
         data = response.get_json()
         assert data is not None
         assert data.get("error") == "sidecar_not_configured"
-    else:
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data is not None
-        assert data.get(payload_key) is True
+
+
+def test_start_ollama_calls_sidecar_when_configured(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[tuple[str, str | None]] = []
+
+    def fake_start(base: str, secret: str | None) -> tuple[bool, str | None]:
+        calls.append((base, secret))
+        return True, None
+
+    monkeypatch.setattr("app.ollama.routes.post_ollama_start", fake_start)
+
+    app = _db_app(
+        tmp_path_factory,
+        SIDECAR_BASE_URL="http://sidecar:8090",
+        SIDECAR_SHARED_SECRET="secret",
+    )
+    client = app.test_client()
+    response = client.post("/api/ollama/start")
+    assert response.status_code == 200
+    assert calls == [("http://sidecar:8090", "secret")]
+
+
+def test_start_ollama_propagates_start_failure(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def fake_start(_base: str, _secret: str | None) -> tuple[bool, str | None]:
+        return False, "no docker"
+
+    monkeypatch.setattr("app.ollama.routes.post_ollama_start", fake_start)
+
+    app = _db_app(
+        tmp_path_factory,
+        SIDECAR_BASE_URL="http://sidecar:8090",
+        SIDECAR_SHARED_SECRET="x",
+    )
+    client = app.test_client()
+    response = client.post("/api/ollama/start")
+    assert response.status_code == 502
+    data = response.get_json()
+    assert data is not None
+    assert data.get("detail") == "no docker"
 
 
 def test_go_to_sleep_calls_sidecar_when_configured(

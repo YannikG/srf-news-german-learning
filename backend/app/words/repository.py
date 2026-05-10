@@ -8,6 +8,7 @@ from typing import Any
 from sqlalchemy import text
 
 from ..persistence.sqlite_db import SqlDatabase
+from .constants import QUERY_CEFR_NONE
 
 _SELECT_COLUMNS = (
     "id, german_label, category, difficulty, translation, cefr_level, created_at, updated_at"
@@ -43,16 +44,27 @@ class SqliteWordsRepository:
             rows = conn.execute(stmt, params).fetchall()
             return {int(r[0]) for r in rows}
 
-    def list(self, *, category: str | None = None) -> list[dict[str, Any]]:
-        with self._db.begin() as conn:
-            if category is None:
-                stmt = text(f"SELECT {_SELECT_COLUMNS} FROM words ORDER BY id")
-                result = conn.execute(stmt)
+    def list(
+        self,
+        *,
+        category: str | None = None,
+        cefr_level: str | None = None,
+    ) -> list[dict[str, Any]]:
+        clauses: list[str] = []
+        params: dict[str, Any] = {}
+        if category is not None:
+            clauses.append("category = :category")
+            params["category"] = category
+        if cefr_level is not None:
+            if cefr_level == QUERY_CEFR_NONE:
+                clauses.append("cefr_level IS NULL")
             else:
-                stmt = text(
-                    f"SELECT {_SELECT_COLUMNS} FROM words WHERE category = :category ORDER BY id",
-                )
-                result = conn.execute(stmt, {"category": category})
+                clauses.append("cefr_level = :cefr_level")
+                params["cefr_level"] = cefr_level
+        where = f" WHERE {' AND '.join(clauses)}" if clauses else ""
+        stmt = text(f"SELECT {_SELECT_COLUMNS} FROM words{where} ORDER BY id")
+        with self._db.begin() as conn:
+            result = conn.execute(stmt, params) if params else conn.execute(stmt)
             return [dict(row) for row in result.mappings().all()]
 
     def get(self, word_id: int) -> dict[str, Any] | None:

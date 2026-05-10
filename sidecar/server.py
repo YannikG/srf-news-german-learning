@@ -146,6 +146,10 @@ def create_app() -> Flask:
 
     @app.post("/ollama/start")
     def start_ollama() -> tuple[Any, int]:
+        """Start the Ollama container if it is not already running.
+
+        Idempotent: duplicate ``POST`` while ``running`` returns 200 with ``noop: true``.
+        """
         c, err = _get_ollama_or_error(log_context="start")
         if err is not None:
             return err
@@ -153,8 +157,9 @@ def create_app() -> Flask:
 
         try:
             c.reload()
-            if c.status != "running":
-                c.start()
+            if c.status == "running":
+                return jsonify(ok=True, ollama=_container_summary(c), noop=True), 200
+            c.start()
             c.reload()
         except DockerException as e:
             logger.exception("Failed to start Ollama container")
@@ -164,12 +169,19 @@ def create_app() -> Flask:
 
     @app.post("/ollama/stop")
     def stop_ollama() -> tuple[Any, int]:
+        """Stop the Ollama container if it is running or paused.
+
+        Idempotent: duplicate ``POST`` while already stopped returns 200 with ``noop: true``.
+        """
         c, err = _get_ollama_or_error(log_context="stop")
         if err is not None:
             return err
         assert c is not None
 
         try:
+            c.reload()
+            if c.status not in ("running", "paused", "restarting"):
+                return jsonify(ok=True, ollama=_container_summary(c), noop=True), 200
             c.stop(timeout=30)
             c.reload()
         except DockerException as e:
