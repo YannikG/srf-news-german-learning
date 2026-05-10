@@ -11,7 +11,7 @@ Das Backend trennt **HTTP**, **Anwendungslogik** und **Persistenz**:
 | **Repository** | SQL und Tabellen-Mapping; keine HTTP-Kenntnis | `app/words/repository.py`, `app/articles/repository.py`, `app/settings/repository.py` |
 | **Datenbank-Hülle** | SQLAlchemy-``Engine`` (Core, kein ORM), ``PRAGMA foreign_keys``, Transaktionen via ``begin()`` | `app/persistence/sqlite_engine.py` (gemeinsame Engine-Erzeugung), `sqlite_db.py` / `vectors_db.py` |
 
-Migrationen und idempotentes Anlegen der Datei bleiben in `app/db/` (stdlib-``sqlite3``, SQL-Dateien) für **``app.db``**. Für **``vectors.db``** (Phase 5, P5-I01) liegen SQL und Bootstrap in ``app/vectors/`` (sqlite-vec ``vec0``). **Repositories** sprechen die jeweilige Datei über **SQLAlchemy 2.0 Core** (`Engine`, `text()`, gebundene Parameter, ``RowMapping`` → ``dict``), ohne Mapper-Klassen für Entitäten.
+Migrationen und idempotentes Anlegen der Datei bleiben in `app/db/` (stdlib-``sqlite3``, SQL-Dateien; gemeinsame Buchhaltung in ``migration_bookkeeping``, atomare ``executescript``-Läufe in ``migration_tx``) für **``app.db``**. Für **``vectors.db``** (Phase 5, P5-I01) liegen SQL und Bootstrap in ``app/vectors/`` (sqlite-vec ``vec0``). **Repositories** sprechen die jeweilige Datei über **SQLAlchemy 2.0 Core** (`Engine`, `text()`, gebundene Parameter, ``RowMapping`` → ``dict``), ohne Mapper-Klassen für Entitäten.
 
 **Hinweis:** Pro Repository-Operation ``with db.begin() as conn:`` — entspricht einer Transaktion mit Commit bei Erfolg und Rollback bei Fehler (ersetzt das frühere manuelle ``commit()`` auf roher ``sqlite3``-Connection).
 
