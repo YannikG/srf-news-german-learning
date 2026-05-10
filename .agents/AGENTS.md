@@ -8,7 +8,7 @@ Vor grösseren Code- oder Architekturänderungen mindestens lesen:
 2. README der **betroffenen Phase** unter `docs/roadmap/phase-N/README.md`
 3. [`docs/agents-docs/README.md`](../docs/agents-docs/README.md)
 4. Bei Fragen zu Spec vs. Tracker: [`docs/zusammenarbeit/README.md`](../docs/zusammenarbeit/README.md) (SSOT); ergänzend [`docs/agents-docs/collaboration.md`](../docs/agents-docs/collaboration.md)
-5. Implementierung aus GitHub-Issue: [`.agents/skills/implement-plan-workflow/SKILL.md`](./skills/implement-plan-workflow/SKILL.md); `gh`: [`docs/agents-docs/github-cli.md`](../docs/agents-docs/github-cli.md)
+5. Implementierung aus GitHub-Issue: [`.agents/skills/implement-plan-workflow/SKILL.md`](./skills/implement-plan-workflow/SKILL.md); `gh`: [`docs/agents-docs/github-cli.md`](../docs/agents-docs/github-cli.md). PR-Review-Feedback inkl. Thread-Resolve-Schleife: [`.agents/skills/check-for-review-or-wait/SKILL.md`](./skills/check-for-review-or-wait/SKILL.md).
 
 ## Code-Sprache
 

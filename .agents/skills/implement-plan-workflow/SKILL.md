@@ -21,7 +21,7 @@ disable-model-invocation: true
 
 Repo: `.agents/AGENTS.md`, `docs/agents-docs/README.md`, `docs/zusammenarbeit/README.md`.
 
-**Companion:** impl → [`.agents/skills/caveman/SKILL.md`](./caveman/SKILL.md); Ende → [`.agents/skills/review-and-fix/SKILL.md`](./review-and-fix/SKILL.md).
+**Companion:** impl → [`.agents/skills/caveman/SKILL.md`](./caveman/SKILL.md); Ende → [`.agents/skills/review-and-fix/SKILL.md`](./review-and-fix/SKILL.md). Optional nach PR-Review: [`.agents/skills/check-for-review-or-wait/SKILL.md`](./check-for-review-or-wait/SKILL.md) (Fixes, erneut review-and-fix, Review-Threads resolven, Schleife).
 
 **Pre:** working tree clean sonst stop+fragen; `gh` login; Issue URL/# Pflicht sonst einmal nachfragen — **nie** Ersatz-Issue selbst anlegen.
 
