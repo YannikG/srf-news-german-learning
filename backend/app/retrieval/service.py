@@ -17,6 +17,17 @@ DEFAULT_RETRIEVAL_CONTEXT_MAX_CHARS = 8192
 KNN_FETCH_CAP = 500
 
 
+def _coerce_positive_int(raw: Any, *, default: int) -> int:
+    """Return a positive int from settings values; fall back to ``default`` if invalid."""
+    if raw is None:
+        return default
+    try:
+        n = int(raw)
+    except (TypeError, ValueError):
+        return default
+    return n if n > 0 else default
+
+
 class LexiconRetrievalService:
     """Embeds dictionary rows and article context; reads/writes ``WordEmbeddingsRepository``."""
 
@@ -62,11 +73,11 @@ class LexiconRetrievalService:
             return []
 
         settings = self._settings_row()
-        raw_k = settings.get("retrieval_top_k")
-        k = DEFAULT_RETRIEVAL_TOP_K if raw_k is None else int(raw_k)
-
-        raw_max = settings.get("retrieval_context_max_chars")
-        max_chars = DEFAULT_RETRIEVAL_CONTEXT_MAX_CHARS if raw_max is None else int(raw_max)
+        k = _coerce_positive_int(settings.get("retrieval_top_k"), default=DEFAULT_RETRIEVAL_TOP_K)
+        max_chars = _coerce_positive_int(
+            settings.get("retrieval_context_max_chars"),
+            default=DEFAULT_RETRIEVAL_CONTEXT_MAX_CHARS,
+        )
 
         text = context if len(context) <= max_chars else context[:max_chars]
 

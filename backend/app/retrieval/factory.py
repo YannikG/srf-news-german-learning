@@ -15,9 +15,15 @@ from ..vectors.factory import build_word_embeddings_repository
 from ..words.repository import SqliteWordsRepository
 from .service import LexiconRetrievalService
 
+_DEFAULT_OLLAMA_BASE = "http://ollama:11434"
+
 
 def build_lexicon_retrieval_service(app: Flask) -> LexiconRetrievalService:
-    """Wire retrieval from Flask config and extensions (no HTTP routes)."""
+    """Wire retrieval from Flask config and extensions (no HTTP routes).
+
+    Uses ``OLLAMA_BASE_URL`` when set; if empty after stripping, falls back to
+    ``http://ollama:11434`` so the embed client always has an absolute base URL.
+    """
     raw_sql = app.extensions.get(SQL_DATABASE_EXTENSION_KEY)
     if not isinstance(raw_sql, SqlDatabase):
         raise RuntimeError("sql_database extension missing for LexiconRetrievalService")
@@ -27,7 +33,7 @@ def build_lexicon_retrieval_service(app: Flask) -> LexiconRetrievalService:
 
     settings_service = build_settings_service(raw_sql)
 
-    base = str(app.config.get("OLLAMA_BASE_URL") or "").strip()
+    base = str(app.config.get("OLLAMA_BASE_URL") or "").strip() or _DEFAULT_OLLAMA_BASE
     embed_client = OllamaEmbedClient(base_url=base)
 
     idle_raw = app.extensions.get(OLLAMA_IDLE_SERVICE_KEY)

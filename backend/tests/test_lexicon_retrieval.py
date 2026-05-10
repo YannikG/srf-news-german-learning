@@ -133,6 +133,41 @@ def test_top_word_ids_knn_order_respects_lexicon(
     assert len(starts) == 1
 
 
+def test_top_word_ids_invalid_settings_values_use_defaults(
+    sql_and_vectors: tuple[SqlDatabase, VectorsDatabase],
+) -> None:
+    sdb, vdb = sql_and_vectors
+    with sdb.begin() as conn:
+        for wid, label in [(1, "eins"), (2, "zwei"), (10, "zehn")]:
+            conn.execute(
+                text(
+                    "INSERT INTO words (id, german_label, category, difficulty, translation) "
+                    "VALUES (:id, :gl, '', 'Neu', '')",
+                ),
+                {"id": wid, "gl": label},
+            )
+
+    words = SqliteWordsRepository(sdb)
+    vectors = WordEmbeddingsRepository(vdb)
+    vectors.insert(1, _axis(1.0))
+    vectors.insert(2, _axis(2.0))
+    vectors.insert(10, _axis(10.0))
+
+    query_vec = _axis(2.1)
+    svc = LexiconRetrievalService(
+        words_repo=words,
+        vectors_repo=vectors,
+        embed_client=_embed_client_returning(query_vec),
+        settings_row=lambda: {"retrieval_top_k": "nope", "retrieval_context_max_chars": -1},
+        idle_service=_idle_noop_stop(),
+        sidecar_base_url="",
+        sidecar_shared_secret="",
+    )
+
+    ranked = svc.top_word_ids_for_context("body")
+    assert ranked[:2] == [2, 1]
+
+
 def test_sidecar_start_failure_is_clean_error(
     sql_and_vectors: tuple[SqlDatabase, VectorsDatabase],
 ) -> None:
@@ -260,3 +295,32 @@ def test_build_lexicon_retrieval_service_wires_from_app(app) -> None:
 
     svc = build_lexicon_retrieval_service(app)
     assert isinstance(svc, LexiconRetrievalService)
+
+
+def test_build_lexicon_retrieval_service_empty_ollama_url_fallback(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    from app import create_app
+    from app.persistence import SQL_DATABASE_EXTENSION_KEY, VECTORS_DATABASE_EXTENSION_KEY
+    from app.persistence.sqlite_db import SqlDatabase
+    from app.persistence.vectors_db import VectorsDatabase
+    from app.retrieval.factory import build_lexicon_retrieval_service
+
+    db_path = tmp_path_factory.mktemp("db") / "app.db"
+    app = create_app(
+        {
+            "TESTING": True,
+            "DATABASE_PATH": str(db_path),
+            "OLLAMA_BASE_URL": "   ",
+        },
+    )
+    try:
+        svc = build_lexicon_retrieval_service(app)
+        assert svc._embed.base_url == "http://ollama:11434"
+    finally:
+        ext = app.extensions.get(SQL_DATABASE_EXTENSION_KEY)
+        if isinstance(ext, SqlDatabase):
+            ext.dispose()
+        v_ext = app.extensions.get(VECTORS_DATABASE_EXTENSION_KEY)
+        if isinstance(v_ext, VectorsDatabase):
+            v_ext.dispose()

@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 import httpx
 
 from ..vectors.constants import EMBEDDING_DIM
-
-logger = logging.getLogger(__name__)
 
 DEFAULT_EMBEDDING_MODEL = "nomic-embed-text"
 EMBED_PATH = "/api/embed"
@@ -31,6 +28,11 @@ class OllamaEmbedClient:
         self._timeout = timeout
         self._owns_client = http_client is None
         self._client = http_client or httpx.Client(timeout=timeout)
+
+    @property
+    def base_url(self) -> str:
+        """Configured Ollama HTTP origin (no trailing slash)."""
+        return self._base
 
     def close(self) -> None:
         if self._owns_client:
