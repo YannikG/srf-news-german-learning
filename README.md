@@ -28,16 +28,7 @@ Lokales Backend-Setup (venv, `requirements.txt`, Tests) ist in [`backend/README.
 
 Quellcode unter [`frontend/`](frontend/README.md). Node **20** empfohlen (wie CI).
 
-**Variante A (Repo-Root):** einmalig Frontend-Abhängigkeiten installieren, danach:
-
-```bash
-npm ci --prefix frontend
-npm run dev
-```
-
-(`npm install` im Root richtet nur Husky/Prettier ein, nicht die Vue-Abhängigkeiten.)
-
-**Variante B:** im Ordner `frontend/`:
+Alle Vue-/Vite-Befehle im Ordner **`frontend/`** ausführen (`npm install` im Repo-Root richtet nur Husky/Prettier ein, nicht die Vue-Abhängigkeiten):
 
 ```bash
 cd frontend
@@ -48,11 +39,10 @@ npm run dev
 `npm run dev` startet den Vite-Dev-Server (Standardport 5173) und leitet `/api` an `http://127.0.0.1:8000` weiter. Flask muss dafür separat laufen (z. B. `docker compose up` oder lokales venv im `backend/`).
 
 ```bash
+cd frontend
 npm run build
 npm test
 ```
-
-(Entweder im Root wie oben, oder in `frontend/` dieselben Skriptnamen.)
 
 Umgebungsvariablen: Beispiel [`frontend/.env.example`](frontend/.env.example). Optional `VITE_API_BASE_URL` für eine absolute API-Origin; leer bleibt gleiche Origin (Compose-`web` oder Proxy).
 

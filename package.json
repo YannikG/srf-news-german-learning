@@ -3,9 +3,6 @@
   "private": true,
   "scripts": {
     "prepare": "husky",
-    "dev": "npm --prefix frontend run dev",
-    "build": "npm --prefix frontend run build",
-    "test": "npm --prefix frontend run test",
     "format": "prettier --write frontend",
     "format:check": "prettier --check frontend"
   },
