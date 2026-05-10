@@ -128,4 +128,30 @@ describe('SettingsView', () => {
       expect.objectContaining({ severity: 'error', summary: 'Speichern' })
     );
   });
+
+  it('retry loads settings after initial GET failure', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        json: () => Promise.resolve({ error: 'Service unavailable' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ ...baseRow }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const wrapper = await mountView();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Service unavailable');
+    await wrapper.get('[data-testid="settings-retry"]').trigger('click');
+    await flushPromises();
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(wrapper.text()).toContain('Übersetzungssprache');
+  });
 });

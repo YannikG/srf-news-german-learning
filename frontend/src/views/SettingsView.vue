@@ -73,7 +73,7 @@ async function onSave() {
       toast.add({
         severity: 'warn',
         summary: 'Gespeichert',
-        detail: 'Einstellungen gespeichert, aber erneutes Laden ist fehlgeschlagen.',
+        detail: `Einstellungen gespeichert, aber erneutes Laden ist fehlgeschlagen: ${verify.message}`,
         life: 6000,
       });
       applyRow(res.data);
@@ -114,9 +114,19 @@ onMounted(() => {
       <ProgressSpinner stroke-width="4" style="width: 3rem; height: 3rem" />
     </div>
 
-    <Message v-else-if="loadState === 'error' && loadError" severity="error" :closable="false">
-      {{ loadError }}
-    </Message>
+    <div v-else-if="loadState === 'error' && loadError" class="flex flex-col gap-3">
+      <Message severity="error" :closable="false">
+        {{ loadError }}
+      </Message>
+      <Button
+        label="Erneut versuchen"
+        icon="pi pi-refresh"
+        severity="secondary"
+        outlined
+        data-testid="settings-retry"
+        @click="load"
+      />
+    </div>
 
     <template v-else-if="serverRow">
       <div class="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">

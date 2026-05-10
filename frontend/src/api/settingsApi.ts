@@ -16,6 +16,8 @@ export type PatchSettingsResult =
   | { ok: true; data: AppSettings }
   | { ok: false; status: number; message: string };
 
+type SettingsHttpResult = FetchSettingsResult;
+
 const MSG_INVALID_JSON = 'Ungültige JSON-Antwort';
 const MSG_NETWORK = 'Netzwerkfehler';
 const MSG_INVALID_SHAPE = 'Unerwartetes Antwortformat vom Server.';
@@ -74,30 +76,35 @@ export function parseAppSettings(body: unknown): AppSettings | null {
   };
 }
 
+/** Shared JSON parse, HTTP error mapping, and ``parseAppSettings`` for both verbs. */
+async function interpretSettingsResponse(res: Response): Promise<SettingsHttpResult> {
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    return { ok: false, status: res.status, message: MSG_INVALID_JSON };
+  }
+  if (!res.ok) {
+    return {
+      ok: false,
+      status: res.status,
+      message: readErrorMessage(body, `HTTP ${res.status}`),
+    };
+  }
+  const data = parseAppSettings(body);
+  if (!data) {
+    return { ok: false, status: res.status, message: MSG_INVALID_SHAPE };
+  }
+  return { ok: true, data };
+}
+
 /** Loads ``GET /api/settings``. */
 export async function fetchSettings(): Promise<FetchSettingsResult> {
   try {
     const res = await fetch(buildApiUrl('/api/settings'), {
       headers: { Accept: 'application/json' },
     });
-    let body: unknown;
-    try {
-      body = await res.json();
-    } catch {
-      return { ok: false, status: res.status, message: MSG_INVALID_JSON };
-    }
-    if (!res.ok) {
-      return {
-        ok: false,
-        status: res.status,
-        message: readErrorMessage(body, `HTTP ${res.status}`),
-      };
-    }
-    const data = parseAppSettings(body);
-    if (!data) {
-      return { ok: false, status: res.status, message: MSG_INVALID_SHAPE };
-    }
-    return { ok: true, data };
+    return await interpretSettingsResponse(res);
   } catch (e) {
     const message = e instanceof Error ? e.message : MSG_NETWORK;
     return { ok: false, status: 0, message };
@@ -115,24 +122,7 @@ export async function patchSettings(patch: PatchAppSettings): Promise<PatchSetti
       },
       body: JSON.stringify(patch),
     });
-    let body: unknown;
-    try {
-      body = await res.json();
-    } catch {
-      return { ok: false, status: res.status, message: MSG_INVALID_JSON };
-    }
-    if (!res.ok) {
-      return {
-        ok: false,
-        status: res.status,
-        message: readErrorMessage(body, `HTTP ${res.status}`),
-      };
-    }
-    const data = parseAppSettings(body);
-    if (!data) {
-      return { ok: false, status: res.status, message: MSG_INVALID_SHAPE };
-    }
-    return { ok: true, data };
+    return await interpretSettingsResponse(res);
   } catch (e) {
     const message = e instanceof Error ? e.message : MSG_NETWORK;
     return { ok: false, status: 0, message };
