@@ -11,7 +11,7 @@ cd backend
 pytest
 ```
 
-CI runs the same command in [`.github/workflows/quality.yml`](../.github/workflows/quality.yml) (job **Backend (pytest)**) after `pip install -r requirements.txt` and `requirements-dev.txt`.
+CI runs the same command in [`.github/workflows/quality.yml`](../.github/workflows/quality.yml) (job **Backend (pytest)**) after `pip install -r requirements.txt -r requirements-dev.txt`.
 
 ### Without integration-marked tests
 
