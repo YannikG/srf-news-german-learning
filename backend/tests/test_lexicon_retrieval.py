@@ -297,7 +297,7 @@ def test_build_lexicon_retrieval_service_wires_from_app(app) -> None:
     assert isinstance(svc, LexiconRetrievalService)
 
 
-def test_build_lexicon_retrieval_service_empty_ollama_url_fallback(
+def test_build_lexicon_retrieval_service_requires_ollama_base_url(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> None:
     from app import create_app
@@ -315,8 +315,8 @@ def test_build_lexicon_retrieval_service_empty_ollama_url_fallback(
         },
     )
     try:
-        svc = build_lexicon_retrieval_service(app)
-        assert svc._embed.base_url == "http://ollama:11434"
+        with pytest.raises(RuntimeError, match="OLLAMA_BASE_URL is not set"):
+            build_lexicon_retrieval_service(app)
     finally:
         ext = app.extensions.get(SQL_DATABASE_EXTENSION_KEY)
         if isinstance(ext, SqlDatabase):

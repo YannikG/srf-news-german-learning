@@ -15,14 +15,12 @@ from ..vectors.factory import build_word_embeddings_repository
 from ..words.repository import SqliteWordsRepository
 from .service import LexiconRetrievalService
 
-_DEFAULT_OLLAMA_BASE = "http://ollama:11434"
-
 
 def build_lexicon_retrieval_service(app: Flask) -> LexiconRetrievalService:
     """Wire retrieval from Flask config and extensions (no HTTP routes).
 
-    Uses ``OLLAMA_BASE_URL`` when set; if empty after stripping, falls back to
-    ``http://ollama:11434`` so the embed client always has an absolute base URL.
+    Requires a non-empty ``OLLAMA_BASE_URL`` (set via environment and/or Compose
+    for the service hostname on the container network, e.g. ``http://ollama:11434``).
     """
     raw_sql = app.extensions.get(SQL_DATABASE_EXTENSION_KEY)
     if not isinstance(raw_sql, SqlDatabase):
@@ -33,7 +31,13 @@ def build_lexicon_retrieval_service(app: Flask) -> LexiconRetrievalService:
 
     settings_service = build_settings_service(raw_sql)
 
-    base = str(app.config.get("OLLAMA_BASE_URL") or "").strip() or _DEFAULT_OLLAMA_BASE
+    base = str(app.config.get("OLLAMA_BASE_URL") or "").strip()
+    if not base:
+        raise RuntimeError(
+            "OLLAMA_BASE_URL is not set. Set it in the environment for your runtime "
+            "(for Docker Compose, add OLLAMA_BASE_URL on the web service to the Ollama "
+            "HTTP origin reachable on the stack network, typically http://ollama:11434).",
+        )
     embed_client = OllamaEmbedClient(base_url=base)
 
     idle_raw = app.extensions.get(OLLAMA_IDLE_SERVICE_KEY)
