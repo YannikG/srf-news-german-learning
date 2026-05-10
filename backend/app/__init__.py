@@ -1,10 +1,9 @@
 """Flask application factory.
 
-Registers health, dictionary, article read, news refresh, settings, and Ollama idle blueprints;
-bootstraps ``app.db`` on first start when the file at ``DATABASE_PATH`` is missing,
-and accepts an optional
-``test_config`` map so tests and environments can inject settings without mutating an
-already-built app.
+Registers health, dictionary, article read, news refresh, settings, Ollama idle,
+and SSE stream blueprints. Bootstraps ``app.db`` on first start when the file at
+``DATABASE_PATH`` is missing, and accepts an optional ``test_config`` map so tests
+and environments can inject settings without mutating an already-built app.
 """
 
 from __future__ import annotations
@@ -19,6 +18,7 @@ from flask import Flask
 
 from .articles import articles_bp
 from .db import APP_DB_PATH, init_database
+from .events import EVENTS_SSE_HUB_KEY, SseHub, events_bp
 from .health import health_bp
 from .news import news_bp
 from .ollama import OLLAMA_IDLE_SERVICE_KEY, ollama_bp
@@ -94,6 +94,7 @@ def create_app(test_config: Mapping[str, Any] | None = None) -> Flask:
     app.register_blueprint(news_bp, url_prefix="/api")
     app.register_blueprint(settings_bp, url_prefix="/api")
     app.register_blueprint(ollama_bp, url_prefix="/api")
+    app.register_blueprint(events_bp, url_prefix="/api")
 
     sidecar_base = str(app.config.get("SIDECAR_BASE_URL") or "").strip()
     sidecar_secret_raw = app.config.get("SIDECAR_SHARED_SECRET")
@@ -105,12 +106,26 @@ def create_app(test_config: Mapping[str, Any] | None = None) -> Flask:
             return False, "SIDECAR_BASE_URL is not set"
         return post_ollama_stop(sidecar_base, sidecar_secret or None)
 
-    app.extensions[OLLAMA_IDLE_SERVICE_KEY] = OllamaIdleService(
+    idle_svc = OllamaIdleService(
         idle_shutdown_seconds=float(idle_sec),
         warning_seconds=float(warn_sec),
         stop_fn=_stop_ollama,
         idle_enabled=bool(sidecar_base),
     )
+    app.extensions[OLLAMA_IDLE_SERVICE_KEY] = idle_svc
+
+    sse_hub = SseHub()
+    app.extensions[EVENTS_SSE_HUB_KEY] = sse_hub
+
+    def _publish_ollama_state() -> None:
+        sse_hub.publish("ollama_state", idle_svc.sse_public_state())
+
+    idle_svc.add_state_listener(_publish_ollama_state)
+
+    def _on_idle_warning() -> None:
+        sse_hub.publish("shutdown_warning", {"warning_seconds": warn_sec})
+
+    idle_svc.add_warning_listener(_on_idle_warning)
 
     if app.config.get("OLLAMA_IDLE_START_POLL_THREAD"):
         start_idle_poll_thread(app)

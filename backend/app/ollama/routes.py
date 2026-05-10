@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from flask import Blueprint, Response, current_app, jsonify
 
+from ..events.constants import EVENTS_SSE_HUB_KEY
+from ..events.hub import SseHub
 from .constants import OLLAMA_IDLE_SERVICE_KEY
 from .service import OllamaIdleService
 
@@ -26,6 +28,10 @@ def cancel_idle_shutdown() -> tuple[Response, int]:
             ),
             503,
         )
+    hub_raw = current_app.extensions.get(EVENTS_SSE_HUB_KEY)
+    hub = hub_raw if isinstance(hub_raw, SseHub) else None
+    if hub is not None:
+        hub.publish("shutdown_cancelled", {})
     svc.cancel_idle_shutdown()
     return jsonify(ok=True), 200
 
