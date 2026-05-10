@@ -54,7 +54,7 @@ class LexiconRetrievalService:
         self._sidecar_secret = sidecar_shared_secret
         self._start_ollama_fn = start_ollama_fn or post_ollama_start
 
-    def embed_and_store_word(self, word_id: int) -> None:
+    def embed_and_store_word(self, word_id: int, *, track_idle: bool = True) -> None:
         """Embed ``german_label`` for ``word_id`` and upsert into ``vectors.db``."""
         row = self._words.get(word_id)
         if row is None:
@@ -67,9 +67,9 @@ class LexiconRetrievalService:
             vec = self._embed.embed_text(label)
             self._vectors.insert(word_id, vec)
 
-        self._run_tracked_ollama_session(work)
+        self._run_tracked_ollama_session(work, track_idle=track_idle)
 
-    def top_word_ids_for_context(self, context: str) -> list[int]:
+    def top_word_ids_for_context(self, context: str, *, track_idle: bool = True) -> list[int]:
         """Return up to ``k`` lexicon ``word_id`` values nearest the embedded ``context``."""
         if self._words.count_words() == 0:
             return []
@@ -89,7 +89,7 @@ class LexiconRetrievalService:
             ranked = self._vectors.knn_by_vector(query_vec, fetch_n)
             return self._filter_ranked_to_lexicon(ranked, k)
 
-        return self._run_tracked_ollama_session(work)
+        return self._run_tracked_ollama_session(work, track_idle=track_idle)
 
     def _filter_ranked_to_lexicon(
         self,
@@ -118,9 +118,14 @@ class LexiconRetrievalService:
             msg = err or "unknown error"
             raise RetrievalServiceError(f"Sidecar Ollama start failed: {msg}")
 
-    def _run_tracked_ollama_session(self, work: Callable[[], _TSession]) -> _TSession:
+    def _run_tracked_ollama_session(
+        self,
+        work: Callable[[], _TSession],
+        *,
+        track_idle: bool = True,
+    ) -> _TSession:
         self._ensure_ollama_container()
-        idle = self._idle
+        idle = self._idle if track_idle else None
         if idle is not None:
             idle.begin_request()
         try:

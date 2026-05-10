@@ -10,12 +10,19 @@ from ..persistence import SQL_DATABASE_EXTENSION_KEY
 from ..persistence.sqlite_db import SqlDatabase
 from .factory import build_articles_service
 from .service import ArticleServiceError, ArticlesService
+from .simplify_factory import build_article_simplify_service
+from .simplify_service import ArticleSimplifyServiceError
 
 articles_bp = Blueprint("articles", __name__)
 
 
 @articles_bp.errorhandler(ArticleServiceError)
 def _article_service_error(e: ArticleServiceError) -> tuple[Response, int]:
+    return jsonify(error=e.message), e.status_code
+
+
+@articles_bp.errorhandler(ArticleSimplifyServiceError)
+def _article_simplify_service_error(e: ArticleSimplifyServiceError) -> tuple[Response, int]:
     return jsonify(error=e.message), e.status_code
 
 
@@ -74,3 +81,15 @@ def list_articles() -> tuple[Response, int]:
 def get_article(article_id: int) -> tuple[Response, int]:
     row = _articles_service().get_article(article_id)
     return jsonify(row), 200
+
+
+@articles_bp.post("/articles/<int:article_id>/simplify")
+def post_simplify_article(article_id: int) -> tuple[Response, int]:
+    """Run LLM simplify with streaming SSE events (``llm_chunk``, ``llm_done``)."""
+    body = request.get_json(silent=True) or {}
+    raw_cefr = body.get("cefr_level")
+    if not isinstance(raw_cefr, str) or not raw_cefr.strip():
+        return jsonify(error="cefr_level is required as a non-empty string"), 400
+    svc = build_article_simplify_service(current_app)
+    payload = svc.simplify_article(article_id, raw_cefr)
+    return jsonify(payload), 200

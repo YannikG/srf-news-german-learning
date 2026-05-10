@@ -12,6 +12,9 @@ from app.db import MIGRATION_IDS, init_database
 EXPECTED_TABLES = frozenset(
     {
         "_migrations",
+        "article_simplification_suggested_words",
+        "article_simplification_used_words",
+        "article_simplifications",
         "article_words",
         "articles",
         "articles_fts",
@@ -27,6 +30,9 @@ EXPECTED_TABLES = frozenset(
 
 EXPECTED_INDEXES = frozenset(
     {
+        "idx_article_simplifications_article_id",
+        "idx_article_simplification_suggested_words_word_id",
+        "idx_article_simplification_used_words_word_id",
         "idx_articles_publisher",
         "idx_articles_release_date",
         "idx_articles_title",
@@ -40,6 +46,7 @@ EXPECTED_INDEXES = frozenset(
 
 EXPECTED_TRIGGERS = frozenset(
     {
+        "trg_article_simplifications_updated_at",
         "trg_articles_ad_fts",
         "trg_articles_ai_fts",
         "trg_articles_au_fts",
