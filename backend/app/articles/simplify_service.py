@@ -193,11 +193,8 @@ class ArticleSimplifyService:
             raise ArticleSimplifyServiceError("LLM output failed validation", 502) from exc
 
         markdown_clean = strip_images_from_markdown(parsed.markdown)
-        if "!" in markdown_clean and "](" in markdown_clean:
-            # Cheap guard if Markdown image syntax survived unusual whitespace.
-            markdown_clean = strip_images_from_markdown(markdown_clean)
 
-        allowed_ids = self._words.ids_in_lexicon(parsed.used_word_ids)
+        allowed_ids = set(self._words.ids_in_lexicon(parsed.used_word_ids))
         used_ordered = [wid for wid in parsed.used_word_ids if wid in allowed_ids]
 
         new_word_rows: list[dict[str, str | None]] = []

@@ -93,29 +93,29 @@ class SqliteArticleSimplifyRepository:
                 {"sid": sid},
             )
 
-            for wid in used_word_ids:
+            if used_word_ids:
                 conn.execute(
                     text(
                         "INSERT INTO article_simplification_used_words "
                         "(simplification_id, word_id) VALUES (:sid, :wid)",
                     ),
-                    {"sid": sid, "wid": wid},
+                    [{"sid": sid, "wid": wid} for wid in used_word_ids],
                 )
 
-            for wid in suggested_word_ids:
+            if suggested_word_ids:
                 conn.execute(
                     text(
                         "INSERT INTO article_simplification_suggested_words "
                         "(simplification_id, word_id) VALUES (:sid, :wid)",
                     ),
-                    {"sid": sid, "wid": wid},
+                    [{"sid": sid, "wid": wid} for wid in suggested_word_ids],
                 )
                 conn.execute(
                     text(
                         "INSERT OR IGNORE INTO article_words (article_id, word_id) "
                         "VALUES (:aid, :wid)",
                     ),
-                    {"aid": article_id, "wid": wid},
+                    [{"aid": article_id, "wid": wid} for wid in suggested_word_ids],
                 )
 
             return sid, suggested_word_ids

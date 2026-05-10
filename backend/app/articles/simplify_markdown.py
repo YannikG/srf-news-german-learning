@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import re
 
-_MARKDOWN_IMAGE = re.compile(r"!\[[^\]]*]\([^)]*\)")
+# Allow optional whitespace before the URL parentheses (common in some Markdown / LLM output).
+_MARKDOWN_IMAGE = re.compile(r"!\[[^\]]*]\s*\([^)]*\)")
 _HTML_IMG = re.compile(r"<img\b[^>]*>", re.IGNORECASE)
 
 
