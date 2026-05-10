@@ -32,7 +32,8 @@ services:
     ports:
       - "8090:8090"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # rw bind: matches Docker API expectations for start/stop (see PR review on :ro).
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       SIDECAR_SHARED_SECRET: ${SIDECAR_SHARED_SECRET:-dev-sidecar-secret}
       DOCKER_COMPOSE_PROJECT: ${COMPOSE_PROJECT_NAME:-}

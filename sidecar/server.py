@@ -17,6 +17,8 @@ SIDECAR_TOKEN_HEADER = "X-Sidecar-Token"
 OLLAMA_SERVICE_LABEL = "com.docker.compose.service"
 OLLAMA_SERVICE_VALUE = "ollama"
 
+_docker_client_singleton: docker.DockerClient | None = None
+
 
 def _require_auth() -> tuple[Any, int] | None:
     secret = (os.environ.get("SIDECAR_SHARED_SECRET") or "").strip()
@@ -32,7 +34,11 @@ def _require_auth() -> tuple[Any, int] | None:
 
 
 def _docker_client() -> docker.DockerClient:
-    return docker.from_env()
+    """Return a process-wide Docker client (one connection pool per gunicorn worker)."""
+    global _docker_client_singleton
+    if _docker_client_singleton is None:
+        _docker_client_singleton = docker.from_env()
+    return _docker_client_singleton
 
 
 def _self_container(client: docker.DockerClient) -> docker.models.containers.Container | None:
@@ -55,11 +61,8 @@ def _find_ollama_container(client: docker.DockerClient) -> docker.models.contain
         nets = self_c.attrs.get("NetworkSettings", {}).get("Networks") or {}
         self_net_ids = set(nets.keys())
 
-    candidates: list[docker.models.containers.Container] = []
-    for c in client.containers.list(all=True):
-        labels = c.labels or {}
-        if labels.get(OLLAMA_SERVICE_LABEL) == OLLAMA_SERVICE_VALUE:
-            candidates.append(c)
+    label_filter = f"{OLLAMA_SERVICE_LABEL}={OLLAMA_SERVICE_VALUE}"
+    candidates = client.containers.list(all=True, filters={"label": [label_filter]})
 
     if not candidates:
         return None
@@ -86,7 +89,7 @@ def _find_ollama_container(client: docker.DockerClient) -> docker.models.contain
 
 def _container_summary(c: docker.models.containers.Container) -> dict[str, Any]:
     c.reload()
-    state = (c.attrs.get("State") or {}).get("Status") or "unknown"
+    state = c.status or "unknown"
     return {
         "id": c.id,
         "name": c.name,
@@ -150,8 +153,7 @@ def create_app() -> Flask:
 
         try:
             c.reload()
-            state = (c.attrs.get("State") or {}).get("Status") or ""
-            if state != "running":
+            if c.status != "running":
                 c.start()
             c.reload()
         except DockerException as e:

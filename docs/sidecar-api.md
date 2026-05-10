@@ -1,6 +1,6 @@
 # Docker sidecar HTTP API (Ollama control)
 
-The `sidecar` Compose service exposes a small HTTP API on port **8090** inside the stack. It is the only service that mounts the Docker socket; the `web` service calls it over HTTP.
+The `sidecar` Compose service exposes a small HTTP API on port **8090** inside the stack. It is the only service that mounts the Docker socket (read/write bind); the `web` service calls it over HTTP.
 
 ## Base URL
 
