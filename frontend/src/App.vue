@@ -2,7 +2,6 @@
 import Button from 'primevue/button';
 import ConfirmDialog from 'primevue/confirmdialog';
 import Dialog from 'primevue/dialog';
-import ProgressSpinner from 'primevue/progressspinner';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
 import { computed } from 'vue';
@@ -16,7 +15,6 @@ const toast = useToast();
 const { health, statusLine, refresh: refreshHealth } = useApiHealthPoll();
 const {
   ollamaState,
-  ollamaBusy,
   streamPreview,
   shutdownDialogOpen,
   shutdownWarningSeconds,
@@ -24,7 +22,6 @@ const {
   startOllama,
 } = useSseOllamaStream();
 
-const showBusy = computed(() => health.value.kind === 'loading' || ollamaBusy.value);
 const showStreamBox = computed(() => streamPreview.value.length > 0);
 const sleepEnabled = computed(() => ollamaState.value?.idle_enabled === true);
 
@@ -165,22 +162,10 @@ async function onStartOllama() {
         </div>
       </div>
     </header>
-    <section
-      v-if="showBusy || showStreamBox"
-      class="border-b border-slate-200 bg-slate-100/90"
-      aria-live="polite"
-    >
-      <div class="mx-auto max-w-5xl px-3 py-3 sm:px-4">
-        <div v-if="showBusy" class="mb-2 flex items-center gap-3 text-sm text-slate-600">
-          <ProgressSpinner
-            stroke-width="4"
-            class="size-8 shrink-0 text-slate-500 [&_circle]:stroke-current"
-          />
-          <span>Laden oder Ollama ist aktiv …</span>
-        </div>
+    <section v-if="showStreamBox" class="border-b border-slate-200 bg-white" aria-live="polite">
+      <div class="mx-auto max-w-5xl px-3 py-2 sm:px-4">
         <div
-          v-if="showStreamBox"
-          class="max-h-40 overflow-y-auto rounded-md border border-slate-200 bg-slate-200/60 p-3 text-left text-xs leading-relaxed text-slate-500"
+          class="max-h-40 overflow-y-auto rounded-md border border-slate-200 bg-slate-50 p-3 text-left text-xs leading-relaxed text-slate-600"
         >
           <pre class="whitespace-pre-wrap font-sans">{{ streamPreview }}</pre>
         </div>
