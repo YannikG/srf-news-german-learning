@@ -19,7 +19,8 @@ def init_vectors_database(path: str | Path) -> list[str]:
 
     Raises ``RuntimeError`` if sqlite-vec cannot be loaded (no application-level
     fallback). Returns migration stems applied in this call (empty if already
-    initialized).
+    initialized). The vec0 migration runs in a single ``DEFERRED`` transaction
+    (``with conn``) so DDL and bookkeeping stay atomic.
     """
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -47,11 +48,13 @@ def init_vectors_database(path: str | Path) -> list[str]:
 
         body = (_SQL_DIR / "001_word_embeddings_vec0.sql").read_text(encoding="utf-8").rstrip()
         script = f"{body}\n{migration_bookkeeping_insert_sql(VEC_MIGRATION_ID)}"
+        saved_isolation = conn.isolation_level
+        conn.isolation_level = "DEFERRED"
         try:
-            conn.executescript(script)
-        except sqlite3.Error:
-            conn.rollback()
-            raise
+            with conn:
+                conn.executescript(script)
+        finally:
+            conn.isolation_level = saved_isolation
         return [VEC_MIGRATION_ID]
     finally:
         conn.close()
