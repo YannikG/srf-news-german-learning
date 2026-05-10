@@ -152,10 +152,10 @@ class NewsRefreshService:
                 code="upstream_error",
             ) from exc
 
-        rows = [dict(map_article_to_app_db_fields(record)) for record in page.results]
+        mappings = [map_article_to_app_db_fields(record) for record in page.results]
         with self._db.begin() as conn:
-            if rows:
-                conn.execute(text(_UPSERT_ARTICLE_SQL), rows)
+            if mappings:
+                conn.execute(text(_UPSERT_ARTICLE_SQL), mappings)
             conn.execute(
                 text(_METADATA_UPSERT_SQL),
                 {
@@ -167,7 +167,7 @@ class NewsRefreshService:
         next_allowed = now + timedelta(seconds=REFRESH_COOLDOWN_SECONDS)
         return {
             "fetched": True,
-            "articles_upserted": len(rows),
+            "articles_upserted": len(mappings),
             "next_allowed_fetch_at": _utc_now_iso(next_allowed),
         }
 
