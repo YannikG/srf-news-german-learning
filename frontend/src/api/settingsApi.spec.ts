@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TranslationLanguage } from '@/types/settings';
-import { fetchSettings, patchSettings } from './settingsApi';
+import { fetchSettings, parseAppSettings, patchSettings } from './settingsApi';
 
 const sampleRow = {
   default_cefr: 'B1' as const,
@@ -8,6 +8,51 @@ const sampleRow = {
   retrieval_top_k: null,
   retrieval_context_max_chars: null,
 };
+
+describe('parseAppSettings', () => {
+  it('returns null when core fields are invalid', () => {
+    expect(parseAppSettings(null)).toBeNull();
+    expect(parseAppSettings({})).toBeNull();
+    expect(
+      parseAppSettings({
+        default_cefr: 'X1',
+        translation_language: 'en',
+        retrieval_top_k: null,
+        retrieval_context_max_chars: null,
+      })
+    ).toBeNull();
+  });
+
+  it('returns row when shape matches backend contract', () => {
+    expect(
+      parseAppSettings({
+        default_cefr: 'B1',
+        translation_language: 'en',
+        retrieval_top_k: 3,
+        retrieval_context_max_chars: null,
+      })
+    ).toEqual({
+      default_cefr: 'B1',
+      translation_language: 'en',
+      retrieval_top_k: 3,
+      retrieval_context_max_chars: null,
+    });
+  });
+
+  it('treats absent retrieval fields as null', () => {
+    expect(
+      parseAppSettings({
+        default_cefr: 'A2',
+        translation_language: 'uk',
+      })
+    ).toEqual({
+      default_cefr: 'A2',
+      translation_language: 'uk',
+      retrieval_top_k: null,
+      retrieval_context_max_chars: null,
+    });
+  });
+});
 
 describe('settingsApi', () => {
   afterEach(() => {
@@ -42,6 +87,28 @@ describe('settingsApi', () => {
       status: 400,
       message: 'translation_language must be a string',
     });
+  });
+
+  it('fetchSettings rejects 200 JSON that fails parse', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            default_cefr: 'B1',
+            translation_language: 'de',
+            retrieval_top_k: null,
+            retrieval_context_max_chars: null,
+          }),
+      })
+    );
+    const r = await fetchSettings();
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.message).toContain('Unerwartetes');
+    }
   });
 
   it('patchSettings sends JSON body and returns data on 200', async () => {

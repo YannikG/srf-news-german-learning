@@ -6,8 +6,12 @@ import Select from 'primevue/select';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, ref } from 'vue';
 import { fetchSettings, patchSettings } from '@/api/settingsApi';
-import type { AppSettings, CefrLevel, TranslationLanguage } from '@/types/settings';
-import { CEFR_LEVELS } from '@/types/settings';
+import {
+  CEFR_LEVELS,
+  type AppSettings,
+  type CefrLevel,
+  type TranslationLanguage,
+} from '@/types/settings';
 
 const toast = useToast();
 

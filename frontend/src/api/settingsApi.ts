@@ -1,5 +1,12 @@
 import { buildApiUrl } from '@/api/buildApiUrl';
-import type { AppSettings, PatchAppSettings } from '@/types/settings';
+import {
+  CEFR_LEVELS,
+  TRANSLATION_LANGUAGES,
+  type AppSettings,
+  type CefrLevel,
+  type PatchAppSettings,
+  type TranslationLanguage,
+} from '@/types/settings';
 
 export type FetchSettingsResult =
   | { ok: true; data: AppSettings }
@@ -9,6 +16,10 @@ export type PatchSettingsResult =
   | { ok: true; data: AppSettings }
   | { ok: false; status: number; message: string };
 
+const MSG_INVALID_JSON = 'Ungültige JSON-Antwort';
+const MSG_NETWORK = 'Netzwerkfehler';
+const MSG_INVALID_SHAPE = 'Unerwartetes Antwortformat vom Server.';
+
 function readErrorMessage(body: unknown, fallback: string): string {
   if (body && typeof body === 'object' && 'error' in body) {
     const err = (body as { error?: unknown }).error;
@@ -17,6 +28,50 @@ function readErrorMessage(body: unknown, fallback: string): string {
     }
   }
   return fallback;
+}
+
+function isCefrLevel(value: string): value is CefrLevel {
+  return (CEFR_LEVELS as readonly string[]).includes(value);
+}
+
+function isTranslationLanguage(value: string): value is TranslationLanguage {
+  return (TRANSLATION_LANGUAGES as readonly string[]).includes(value);
+}
+
+/** Integer, null, or absent (treat absent as null when building ``AppSettings``). */
+function isIntOrNullish(value: unknown): value is number | null | undefined {
+  if (value === null || value === undefined) {
+    return true;
+  }
+  return typeof value === 'number' && Number.isInteger(value);
+}
+
+/** Narrow ``GET``/``PATCH`` JSON to ``AppSettings`` or reject. */
+export function parseAppSettings(body: unknown): AppSettings | null {
+  if (!body || typeof body !== 'object') {
+    return null;
+  }
+  const o = body as Record<string, unknown>;
+  const dc = o.default_cefr;
+  const tl = o.translation_language;
+  if (typeof dc !== 'string' || !isCefrLevel(dc)) {
+    return null;
+  }
+  if (typeof tl !== 'string' || !isTranslationLanguage(tl)) {
+    return null;
+  }
+  if (!isIntOrNullish(o.retrieval_top_k)) {
+    return null;
+  }
+  if (!isIntOrNullish(o.retrieval_context_max_chars)) {
+    return null;
+  }
+  return {
+    default_cefr: dc,
+    translation_language: tl,
+    retrieval_top_k: o.retrieval_top_k ?? null,
+    retrieval_context_max_chars: o.retrieval_context_max_chars ?? null,
+  };
 }
 
 /** Loads ``GET /api/settings``. */
@@ -29,7 +84,7 @@ export async function fetchSettings(): Promise<FetchSettingsResult> {
     try {
       body = await res.json();
     } catch {
-      return { ok: false, status: res.status, message: 'Invalid JSON response' };
+      return { ok: false, status: res.status, message: MSG_INVALID_JSON };
     }
     if (!res.ok) {
       return {
@@ -38,9 +93,13 @@ export async function fetchSettings(): Promise<FetchSettingsResult> {
         message: readErrorMessage(body, `HTTP ${res.status}`),
       };
     }
-    return { ok: true, data: body as AppSettings };
+    const data = parseAppSettings(body);
+    if (!data) {
+      return { ok: false, status: res.status, message: MSG_INVALID_SHAPE };
+    }
+    return { ok: true, data };
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Network error';
+    const message = e instanceof Error ? e.message : MSG_NETWORK;
     return { ok: false, status: 0, message };
   }
 }
@@ -60,7 +119,7 @@ export async function patchSettings(patch: PatchAppSettings): Promise<PatchSetti
     try {
       body = await res.json();
     } catch {
-      return { ok: false, status: res.status, message: 'Invalid JSON response' };
+      return { ok: false, status: res.status, message: MSG_INVALID_JSON };
     }
     if (!res.ok) {
       return {
@@ -69,9 +128,13 @@ export async function patchSettings(patch: PatchAppSettings): Promise<PatchSetti
         message: readErrorMessage(body, `HTTP ${res.status}`),
       };
     }
-    return { ok: true, data: body as AppSettings };
+    const data = parseAppSettings(body);
+    if (!data) {
+      return { ok: false, status: res.status, message: MSG_INVALID_SHAPE };
+    }
+    return { ok: true, data };
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Network error';
+    const message = e instanceof Error ? e.message : MSG_NETWORK;
     return { ok: false, status: 0, message };
   }
 }
