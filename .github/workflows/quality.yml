@@ -22,9 +22,9 @@ jobs:
       - name: Install Ruff
         run: pip install "ruff==0.15.12"
       - name: Ruff check
-        run: ruff check app tests wsgi.py
+        run: ruff check .
       - name: Ruff format (check)
-        run: ruff format --check app tests wsgi.py
+        run: ruff format --check .
 
   backend-pytest:
     name: Backend (pytest)

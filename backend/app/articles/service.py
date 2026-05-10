@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import base64
 import json
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from typing import Any
 
 from .ports import ArticlesRepositoryPort
@@ -19,8 +19,7 @@ class ArticleServiceError(Exception):
 
 def default_list_filter_date() -> date:
     """UTC calendar date used when ``GET /api/articles`` omits ``date``."""
-    # Keep ``timezone.utc`` (not ``datetime.UTC``) so local pytest on Python < 3.11 still runs.
-    return datetime.now(timezone.utc).date()  # noqa: UP017
+    return datetime.now(UTC).date()
 
 
 class ArticlesService:

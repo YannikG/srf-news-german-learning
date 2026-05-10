@@ -18,7 +18,7 @@ line-length = 100
 extend-exclude = [".venv", "venv", ".tmp-venv", "__pycache__"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "RET"]
 
 [tool.ruff.format]
 quote-style = "double"

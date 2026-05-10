@@ -56,7 +56,7 @@ class SrgArticlesApiClient:
         limit: int = 10,
         cursor: str | None = None,
     ) -> ArticleListPage:
-        """Return the first (or ``cursor``) page; ``limit`` must stay within API bounds (1–10)."""
+        """Return the first (or ``cursor``) page; ``limit`` must stay within API bounds (1-10)."""
         if limit < 1 or limit > 10:
             msg = "limit must be between 1 and 10 for the SRG articles API"
             raise ValueError(msg)

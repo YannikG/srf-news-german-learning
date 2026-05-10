@@ -28,8 +28,7 @@ def _db_app(tmp_path_factory: pytest.TempPathFactory, **extra_config):
         "OLLAMA_IDLE_START_POLL_THREAD": False,
     }
     cfg.update(extra_config)
-    application = create_app(cfg)
-    return application
+    return create_app(cfg)
 
 
 @pytest.fixture
