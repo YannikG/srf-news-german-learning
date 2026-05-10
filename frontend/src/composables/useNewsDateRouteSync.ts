@@ -15,9 +15,13 @@ export function useNewsDateRouteSync(): Ref<string> {
 
   watch(
     () => route.query.d,
-    (d) => {
-      const p = parseIsoDateQueryParam(d);
-      if (p) selectedDate.value = p;
+    () => {
+      const p = parseIsoDateQueryParam(route.query.d);
+      if (p) {
+        selectedDate.value = p;
+      } else if (route.path === '/') {
+        selectedDate.value = localIsoDate(new Date());
+      }
     }
   );
 
