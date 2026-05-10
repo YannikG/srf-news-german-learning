@@ -1,6 +1,6 @@
 # Frontend
 
-Vue 3, Vite, TypeScript, Tailwind 4, PrimeVue (Aura). Router-Grundgerüst und mobile-first App-Shell; News-Logik folgt in späteren Issues.
+Vue 3, Vite, TypeScript, Tailwind 4, PrimeVue mit Aura-Preset aus `@primeuix/themes`. Router-Grundgerüst und mobile-first App-Shell; News-Logik folgt in späteren Issues.
 
 ## Voraussetzungen
 

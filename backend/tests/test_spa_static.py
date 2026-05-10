@@ -54,5 +54,8 @@ def test_api_health_not_shadowed_when_spa_present(tmp_path_factory: pytest.TempP
         unknown = tc.get("/any/vue/route")
         assert unknown.status_code == 200
         assert b"spa" in unknown.data
+
+        escape = tc.get("/nested/../../../../etc/passwd")
+        assert escape.status_code == 404
     finally:
         _dispose_app_databases(application)
