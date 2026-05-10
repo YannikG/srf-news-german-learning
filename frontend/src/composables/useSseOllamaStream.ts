@@ -49,7 +49,7 @@ function parseLlmChunk(raw: unknown): { article_id: string; delta: string } | nu
 }
 
 /**
- * Single ``EventSource`` on ``GET /api/events/stream``; Ollama idle + LLM chunk UX state.
+ * Holds one browser EventSource to GET /api/events/stream; exposes Ollama idle and LLM chunk UX state.
  */
 export function useSseOllamaStream() {
   const ollamaState = shallowRef<OllamaPublicState | null>(null);

@@ -64,14 +64,18 @@ describe('App shell', () => {
 
     await flushPromises();
 
-    expect(wrapper.text()).toContain('SRF News Lernen');
-    expect(wrapper.text()).toContain('News und Lernmodus');
-    expect(wrapper.find('main').exists()).toBe(true);
-    expect(wrapper.text()).toContain('News');
-    expect(wrapper.text()).toContain('Wörterbuch');
-    expect(wrapper.text()).toContain('Einstellungen');
-    expect(wrapper.text()).toContain('Timeline aus der lokalen Datenbank');
-    expect(wrapper.text()).toContain('API: OK');
-    expect(wrapper.text()).toContain('Sidecar: OK');
+    try {
+      expect(wrapper.text()).toContain('SRF News Lernen');
+      expect(wrapper.text()).toContain('News und Lernmodus');
+      expect(wrapper.find('main').exists()).toBe(true);
+      expect(wrapper.text()).toContain('News');
+      expect(wrapper.text()).toContain('Wörterbuch');
+      expect(wrapper.text()).toContain('Einstellungen');
+      expect(wrapper.text()).toContain('Timeline aus der lokalen Datenbank');
+      expect(wrapper.text()).toContain('API: OK');
+      expect(wrapper.text()).toContain('Sidecar: OK');
+    } finally {
+      wrapper.unmount();
+    }
   });
 });

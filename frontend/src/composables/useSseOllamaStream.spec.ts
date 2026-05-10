@@ -51,29 +51,27 @@ const TestHarness = defineComponent({
   name: 'SseTestHarness',
   components: { Button, Dialog },
   setup() {
-    const s = useSseOllamaStream();
-    return {
-      ...s,
-      async onCancel() {
-        await s.cancelIdleShutdown();
-      },
-    };
+    return useSseOllamaStream();
   },
   template: `
     <Dialog v-model:visible="shutdownDialogOpen" modal>
-      <Button data-testid="cancel" label="Abbruch" @click="onCancel" />
+      <Button data-testid="cancel" label="Abbruch" @click="cancelIdleShutdown" />
     </Dialog>
     <span data-testid="preview">{{ streamPreview }}</span>
   `,
 });
 
 describe('useSseOllamaStream', () => {
+  let lastWrapper: ReturnType<typeof mount> | undefined;
+
   beforeEach(() => {
     MockEventSource.instances = [];
     vi.stubGlobal('EventSource', MockEventSource);
   });
 
   afterEach(() => {
+    lastWrapper?.unmount();
+    lastWrapper = undefined;
     vi.unstubAllGlobals();
   });
 
@@ -96,7 +94,7 @@ describe('useSseOllamaStream', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    mount(TestHarness, {
+    lastWrapper = mount(TestHarness, {
       global: {
         plugins: [
           [PrimeVue, { theme: { preset: Aura, options: { darkModeSelector: false } } }],
@@ -140,7 +138,7 @@ describe('useSseOllamaStream', () => {
       },
     });
 
-    const wrapper = mount(Plain, {
+    lastWrapper = mount(Plain, {
       global: {
         plugins: [
           [PrimeVue, { theme: { preset: Aura, options: { darkModeSelector: false } } }],
@@ -150,6 +148,7 @@ describe('useSseOllamaStream', () => {
     });
 
     await flushPromises();
+    const wrapper = lastWrapper;
     const es = MockEventSource.instances[0];
 
     es.emit('llm_chunk', { article_id: 'a1', delta: 'Hallo' });
