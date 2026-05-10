@@ -25,15 +25,17 @@ backend/
   wsgi.py              # gunicorn entry: `gunicorn wsgi:app`
   requirements.txt
   requirements-dev.txt
-  pyproject.toml       # pytest + Ruff-Konfiguration
+  pyproject.toml       # requires-python >=3.12, pytest, Ruff
   Dockerfile
   .dockerignore
 ```
 
 ## Local setup (relative to repo root)
 
+**Python:** Mindestens **3.12** (siehe ``requires-python`` in ``pyproject.toml``; gleiche Version wie CI und Docker). Venv mit dieser Version anlegen, z. B. ``python3.12 -m venv backend/.venv``.
+
 ```bash
-python -m venv backend/.venv
+python3.12 -m venv backend/.venv
 source backend/.venv/bin/activate
 pip install -r backend/requirements.txt          # runtime only
 pip install -r backend/requirements-dev.txt      # adds pytest and Ruff

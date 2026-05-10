@@ -49,4 +49,4 @@ Die eingecheckte OpenAPI listet unter `clientCredentials` `scopes: {}`. Im Devel
 
 ## Nächster Schritt (Implementierung)
 
-Parser und Fixtures gemäss Issue [P3-I02](../roadmap/phase-3/issues/P3-I02-articles-api-mapping.md); Ingest in [P3-I03](../roadmap/phase-3/issues/P3-I03-news-refresh-ingest.md).
+Parser, Mapping und Tests: Python-Paket ``backend/app/srg_articles`` (Pydantic-Modelle, ``map_article_to_app_db_fields``, Sanitizer ``strip_markdown_images`` für die Regel **keine Bilder** im Markdown). Fixtures unter ``backend/tests/fixtures/``. Ingest persistiert in [P3-I03](../roadmap/phase-3/issues/P3-I03-news-refresh-ingest.md).

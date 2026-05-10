@@ -1,0 +1,60 @@
+{
+  "cursor": "next-page-cursor",
+  "results": [
+    {
+      "id": "urn:pdp:faro_srf:article:fixture-001",
+      "publisher": "SRF",
+      "provenance": "CMS_SRF",
+      "accessConditions": [
+        {
+          "name": "Free"
+        }
+      ],
+      "identifiers": [
+        {
+          "value": "urn:pdp:faro_srf:article:fixture-001",
+          "type": "PdpId"
+        }
+      ],
+      "title": [
+        {
+          "content": "Bundesrat tagt",
+          "language": "de"
+        },
+        {
+          "content": "Le Conseil fédéral se réunit",
+          "language": "fr"
+        }
+      ],
+      "lead": [
+        {
+          "content": "Kurzer Lead zum Thema.",
+          "language": "de"
+        }
+      ],
+      "content": {
+        "text": [
+          "Erster Absatz des Artikels.",
+          "Zweiter Absatz mit eingeschleustem ![](https://cdn.example.invalid/evil.png) Bild-Markdown."
+        ]
+      },
+      "releaseDate": "2024-01-15T10:00:00Z",
+      "modificationDate": "2024-01-16T08:30:00Z",
+      "resources": [
+        {
+          "type": "Picture",
+          "locator": {
+            "url": "https://ilcdn.invalid/story-image.jpg"
+          }
+        },
+        {
+          "type": "Link",
+          "locator": {
+            "url": "https://www.srf.ch/news"
+          },
+          "name": "SRF News"
+        }
+      ]
+    }
+  ]
+}
