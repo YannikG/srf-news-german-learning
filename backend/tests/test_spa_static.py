@@ -57,5 +57,8 @@ def test_api_health_not_shadowed_when_spa_present(tmp_path_factory: pytest.TempP
 
         escape = tc.get("/nested/../../../../etc/passwd")
         assert escape.status_code == 404
+
+        api_prefix_only = tc.get("/api")
+        assert api_prefix_only.status_code == 404
     finally:
         _dispose_app_databases(application)

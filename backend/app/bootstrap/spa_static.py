@@ -22,11 +22,11 @@ def register_spa_static_routes(app: Flask) -> None:
 
     def _safe_relative_path(request_path: str) -> str | None:
         """Return a path relative to ``spa_root`` or None if outside the tree."""
-        rel = str(request_path).lstrip("/")
-        if rel == "":
+        rel = request_path.lstrip("/")
+        if not rel:
             return ""
-        candidate = (spa_root / rel).resolve()
         try:
+            candidate = (spa_root / rel).resolve()
             candidate.relative_to(spa_root)
         except ValueError:
             return None
@@ -38,7 +38,7 @@ def register_spa_static_routes(app: Flask) -> None:
 
     @app.get("/<path:requested_path>")
     def spa_or_asset(requested_path: str) -> Response:
-        if requested_path.startswith("api/"):
+        if requested_path == "api" or requested_path.startswith("api/"):
             abort(404)
         rel = _safe_relative_path(requested_path)
         if rel is None:
