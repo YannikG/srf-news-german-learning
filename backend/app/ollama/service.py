@@ -19,6 +19,13 @@ class OllamaIdleService:
 
     When ``idle_enabled`` is false, deadlines are never armed and ``go_to_sleep``
     must not be invoked via routes (caller checks configuration).
+
+    ``_idle_epoch`` is bumped on ``begin_request``, ``cancel_idle_shutdown``, and
+    ``go_to_sleep`` so a pending idle shutdown can be abandoned before the sidecar
+    stop runs. For the automatic idle path, ``poll`` calls ``_stop_fn`` while
+    holding ``_lock`` after re-checking refcount and epoch so ``begin_request``
+    cannot sneak in between the check and the stop call (callers may block until
+    the HTTP stop returns).
     """
 
     def __init__(
@@ -31,13 +38,16 @@ class OllamaIdleService:
     ) -> None:
         if idle_shutdown_seconds <= 0:
             raise ValueError("idle_shutdown_seconds must be positive")
+        if float(warning_seconds) < 0:
+            raise ValueError("warning_seconds must be non-negative")
         self._idle = float(idle_shutdown_seconds)
-        self._warn = max(0.0, min(float(warning_seconds), self._idle))
+        self._warn = min(float(warning_seconds), self._idle)
         self._stop_fn = stop_fn
         self._idle_enabled = idle_enabled
         self._refcount = 0
         self._shutdown_deadline: float | None = None
         self._warning_fired = False
+        self._idle_epoch = 0
         self._lock = threading.Lock()
         self._warning_listeners: list[WarningListener] = []
 
@@ -50,6 +60,7 @@ class OllamaIdleService:
 
     def begin_request(self) -> None:
         with self._lock:
+            self._idle_epoch += 1
             self._refcount += 1
             self._shutdown_deadline = None
             self._warning_fired = False
@@ -68,6 +79,7 @@ class OllamaIdleService:
 
     def cancel_idle_shutdown(self) -> None:
         with self._lock:
+            self._idle_epoch += 1
             self._shutdown_deadline = None
             self._warning_fired = False
 
@@ -78,9 +90,10 @@ class OllamaIdleService:
         hard stop: the sidecar stops the container and in-flight calls fail.
         """
         with self._lock:
+            self._idle_epoch += 1
             self._shutdown_deadline = None
             self._warning_fired = False
-        ok, err = self._stop_fn()
+            ok, err = self._stop_fn()
         if not ok:
             logger.warning("Ollama go-to-sleep stop failed: %s", err)
         return ok, err
@@ -90,6 +103,7 @@ class OllamaIdleService:
         t = time.time() if now is None else now
         warning_callbacks: list[WarningListener] = []
         should_stop = False
+        epoch_snapshot: int | None = None
         with self._lock:
             if self._refcount > 0 or not self._idle_enabled:
                 return
@@ -99,7 +113,8 @@ class OllamaIdleService:
             if t >= warn_at and not self._warning_fired:
                 self._warning_fired = True
                 warning_callbacks = list(self._warning_listeners)
-            if t >= self._shutdown_deadline and self._refcount == 0:
+            if t >= self._shutdown_deadline:
+                epoch_snapshot = self._idle_epoch
                 self._shutdown_deadline = None
                 self._warning_fired = False
                 should_stop = True
@@ -111,6 +126,13 @@ class OllamaIdleService:
                 logger.exception("Ollama idle warning listener failed")
 
         if should_stop:
-            ok, err = self._stop_fn()
+            assert epoch_snapshot is not None
+            # Hold the lock across ``_stop_fn`` so ``begin_request`` cannot bump
+            # refcount/epoch between the last check and the sidecar stop (HTTP may
+            # block for tens of seconds; new callers wait until stop returns).
+            with self._lock:
+                if self._refcount > 0 or self._idle_epoch != epoch_snapshot:
+                    return
+                ok, err = self._stop_fn()
             if not ok:
                 logger.warning("Ollama idle shutdown stop failed: %s", err)

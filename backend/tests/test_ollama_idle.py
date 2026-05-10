@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 from datetime import timedelta
 
 import pytest
@@ -109,6 +110,54 @@ def test_cancel_prevents_shutdown() -> None:
         frozen.tick(timedelta(seconds=200))
         svc.poll()
     assert stops == []
+
+
+def test_negative_warning_seconds_rejected() -> None:
+    def stop() -> tuple[bool, str | None]:
+        return True, None
+
+    with pytest.raises(ValueError, match="warning_seconds"):
+        OllamaIdleService(
+            idle_shutdown_seconds=10,
+            warning_seconds=-1,
+            stop_fn=stop,
+            idle_enabled=True,
+        )
+
+
+def test_begin_blocks_until_slow_idle_stop_finishes() -> None:
+    """Idle ``poll`` holds the service lock across ``stop_fn``; ``begin_request`` waits."""
+    import time
+
+    entered = threading.Event()
+    release_stop = threading.Event()
+    stops: list[int] = []
+
+    def stop() -> tuple[bool, str | None]:
+        entered.set()
+        assert release_stop.wait(timeout=5)
+        stops.append(1)
+        return True, None
+
+    svc = OllamaIdleService(
+        idle_shutdown_seconds=0.15,
+        warning_seconds=0.0,
+        stop_fn=stop,
+        idle_enabled=True,
+    )
+    svc.begin_request()
+    svc.end_request()
+    time.sleep(0.2)
+    poller = threading.Thread(target=svc.poll)
+    poller.start()
+    assert entered.wait(timeout=5)
+    waiter = threading.Thread(target=svc.begin_request)
+    waiter.start()
+    time.sleep(0.02)
+    release_stop.set()
+    poller.join(timeout=5)
+    waiter.join(timeout=5)
+    assert stops == [1]
 
 
 def test_go_to_sleep_hard_stop_while_refcount_positive() -> None:
