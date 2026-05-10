@@ -42,6 +42,7 @@ describe('useApiHealthPoll', () => {
 
     expect(wrapper.get('[data-testid="line"]').text()).toContain('API: OK');
     expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+    wrapper.unmount();
   });
 
   it('does not apply fetch result after unmount when response arrives late', async () => {
@@ -112,5 +113,6 @@ describe('useApiHealthPoll', () => {
     await flushPromises();
 
     expect(wrapper.get('[data-testid="line"]').text()).toContain('HTTP 503');
+    wrapper.unmount();
   });
 });

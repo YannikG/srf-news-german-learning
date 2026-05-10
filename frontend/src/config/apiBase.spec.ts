@@ -10,7 +10,7 @@ describe('getApiBaseUrl', () => {
     vi.unstubAllEnvs();
   });
 
-  it('returns empty string when VITE_API_BASE_URL is unset', async () => {
+  it('returns empty string when VITE_API_BASE_URL is empty', async () => {
     vi.stubEnv('VITE_API_BASE_URL', '');
     const { getApiBaseUrl } = await import('./apiBase');
     expect(getApiBaseUrl()).toBe('');
