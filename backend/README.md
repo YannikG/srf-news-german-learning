@@ -126,6 +126,8 @@ flask --app wsgi init-vectors-db
 
 **Phase-2 layers:** API integration tests use Flask's test client (`client` in `tests/conftest.py`) against a temporary SQLite database; schema and migration tests assert SQL and the migration runner; small unit tests target pure helpers (for example migration bookkeeping validation) without HTTP.
 
+**P7-I01 (markers, coverage, edge-case map):** see [`docs/testing-backend.md`](../docs/testing-backend.md).
+
 **CI:** the same suite runs in GitHub Actions in [`.github/workflows/quality.yml`](../.github/workflows/quality.yml) under the job **Backend (pytest)** on pull requests and on pushes to `master` (Python 3.12, `pip install -r requirements.txt` and `-r requirements-dev.txt`, then `pytest` in `backend/`). The **Frontend** job in that workflow runs `npm ci`, `npm run build`, and `npm test` under `frontend/` plus root Prettier. No external services are required for the default test run.
 
 Run locally from the **repository root** (parent of `backend/`) so `cd backend` is correct; then `pytest` picks up `pyproject.toml` and the `app` package.

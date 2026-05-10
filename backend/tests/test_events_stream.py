@@ -98,6 +98,7 @@ def test_events_stream_initial_ollama_state(
     db.dispose()
 
 
+@pytest.mark.integration
 def test_events_stream_receives_cancel_events(live_sse_app) -> None:
     base_url, _app = live_sse_app
     buf_holder: dict[str, bytes] = {"buf": b""}
@@ -139,6 +140,7 @@ def test_events_stream_receives_cancel_events(live_sse_app) -> None:
     assert state_after != -1
 
 
+@pytest.mark.integration
 def test_events_stream_shutdown_warning_then_state(live_sse_app_short_idle) -> None:
     base_url, app = live_sse_app_short_idle
     svc = app.extensions.get(OLLAMA_IDLE_SERVICE_KEY)
