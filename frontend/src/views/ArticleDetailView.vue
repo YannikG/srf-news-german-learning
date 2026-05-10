@@ -7,6 +7,7 @@ import { useRoute } from 'vue-router';
 import { fetchArticleDetail } from '@/api/fetchArticles';
 import type { ArticleDetail } from '@/types/article';
 import { renderArticleMarkdown } from '@/utils/renderArticleMarkdown';
+import { parseIsoDateQueryParam } from '@/utils/routerQueryDate';
 import { stripMediaFromText } from '@/utils/stripMediaFromText';
 
 const route = useRoute();
@@ -37,13 +38,7 @@ const bodyHtml = computed(() =>
   bodyMarkdown.value ? renderArticleMarkdown(bodyMarkdown.value) : ''
 );
 
-/** Single ISO date for list deep-link (avoids passing ``string[]`` from duplicate query keys). */
-const newsListDateParam = computed((): string | null => {
-  const d = route.query.d;
-  const raw = Array.isArray(d) ? d[0] : d;
-  if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
-  return raw;
-});
+const newsListDateParam = computed(() => parseIsoDateQueryParam(route.query.d));
 
 const backToNewsRoute = computed(
   (): RouteLocationRaw =>

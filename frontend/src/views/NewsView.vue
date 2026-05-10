@@ -2,17 +2,16 @@
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import ProgressSpinner from 'primevue/progressspinner';
-import { computed, onUnmounted, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { computed, ref } from 'vue';
 import { useToast } from 'primevue/usetoast';
-import { fetchArticlesList } from '@/api/fetchArticles';
+import { useArticlesList } from '@/composables/useArticlesList';
+import { useDebouncedRef } from '@/composables/useDebouncedRef';
+import { useNewsDateRouteSync } from '@/composables/useNewsDateRouteSync';
 import { useNewsRefresh } from '@/composables/useNewsRefresh';
-import type { ArticleListItem } from '@/types/article';
+import { notifyPostNewsRefresh } from '@/news/notifyPostNewsRefresh';
 import { stripMediaFromText } from '@/utils/stripMediaFromText';
 
 const toast = useToast();
-const route = useRoute();
-const router = useRouter();
 const {
   loading: refreshLoading,
   refresh,
@@ -20,69 +19,13 @@ const {
   nextAllowedFetchAtIso,
 } = useNewsRefresh();
 
-function parseQueryDate(q: unknown): string | null {
-  const raw = Array.isArray(q) ? q[0] : q;
-  if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return null;
-  return raw;
-}
-
-/** Flatten router query values to plain strings for ``router.replace``. */
-function queryRecordForReplace(): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const [key, val] of Object.entries(route.query)) {
-    const first = Array.isArray(val) ? val[0] : val;
-    if (typeof first === 'string' && first.length > 0) {
-      out[key] = first;
-    }
-  }
-  return out;
-}
-
-function localIsoDate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-const items = ref<ArticleListItem[]>([]);
-const nextCursor = ref<string | null>(null);
-const listLoading = ref(false);
-const listError = ref<string | null>(null);
-
-const selectedDate = ref(parseQueryDate(route.query.d) ?? localIsoDate(new Date()));
-
-watch(
-  () => route.query.d,
-  (d) => {
-    const p = parseQueryDate(d);
-    if (p) selectedDate.value = p;
-  }
-);
-
-watch(selectedDate, (d) => {
-  const cur = parseQueryDate(route.query.d);
-  if (cur === d) return;
-  void router.replace({ path: '/', query: { ...queryRecordForReplace(), d } });
-});
-
+const selectedDate = useNewsDateRouteSync();
 const searchInput = ref('');
-const debouncedSearch = ref('');
-let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+const debouncedSearch = useDebouncedRef(searchInput, 300);
 
-watch(searchInput, (v) => {
-  if (debounceTimer != null) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
-    debouncedSearch.value = v;
-    debounceTimer = null;
-  }, 300);
-});
-
-onUnmounted(() => {
-  if (debounceTimer != null) {
-    clearTimeout(debounceTimer);
-    debounceTimer = null;
-  }
+const { items, nextCursor, listLoading, listError, loadList } = useArticlesList({
+  selectedDate,
+  debouncedSearch,
 });
 
 const pullStartY = ref<number | null>(null);
@@ -93,9 +36,6 @@ function leadPreview(lead: string | null): string {
   if (!lead) return '';
   return stripMediaFromText(lead).trim();
 }
-
-/** Ignores stale list responses when date or search changes quickly. */
-let listRequestSeq = 0;
 
 const cooldownLabel = computed(() => {
   const iso = nextAllowedFetchAtIso.value;
@@ -110,86 +50,11 @@ const cooldownLabel = computed(() => {
   }
 });
 
-async function loadList(reset: boolean) {
-  const seq = ++listRequestSeq;
-  if (reset) {
-    nextCursor.value = null;
-    items.value = [];
-  }
-  listLoading.value = true;
-  listError.value = null;
-  try {
-    const res = await fetchArticlesList({
-      date: selectedDate.value,
-      q: debouncedSearch.value,
-      cursor: reset ? null : nextCursor.value,
-      limit: 20,
-    });
-    if (seq !== listRequestSeq) return;
-    if (!res.ok) {
-      listError.value = res.message;
-      return;
-    }
-    if (reset) {
-      items.value = res.data.items;
-    } else {
-      items.value = [...items.value, ...res.data.items];
-    }
-    nextCursor.value = res.data.next_cursor;
-  } finally {
-    if (seq === listRequestSeq) {
-      listLoading.value = false;
-    }
-  }
-}
-
-watch(
-  [selectedDate, debouncedSearch],
-  () => {
-    void loadList(true);
-  },
-  { immediate: true }
-);
-
 async function onRefreshClick() {
   const r = await refresh();
-  if (!r.ok) {
-    if (r.code === 'oauth_not_configured') {
-      toast.add({
-        severity: 'warn',
-        summary: 'SRG nicht konfiguriert',
-        detail: r.message,
-        life: 12000,
-      });
-      return;
-    }
-    const summary =
-      r.status === 429 || r.code === 'upstream_rate_limited'
-        ? 'SRG Rate-Limit (429)'
-        : 'Refresh fehlgeschlagen';
-    toast.add({
-      severity: r.status === 429 ? 'warn' : 'error',
-      summary,
-      detail: r.message,
-      life: 8000,
-    });
-    return;
-  }
-  if (r.data.fetched) {
-    toast.add({
-      severity: 'success',
-      summary: 'News aktualisiert',
-      detail: `${r.data.articles_upserted} Artikel verarbeitet.`,
-      life: 4000,
-    });
+  const outcome = notifyPostNewsRefresh(toast.add, r, cooldownLabel.value);
+  if (outcome === 'reload_list') {
     await loadList(true);
-  } else {
-    toast.add({
-      severity: 'info',
-      summary: 'Cooldown',
-      detail: `Nächster Abruf ab ${cooldownLabel.value || r.data.next_allowed_fetch_at}.`,
-      life: 5000,
-    });
   }
 }
 
