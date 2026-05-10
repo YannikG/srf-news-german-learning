@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import ArticleDetailView from '@/views/ArticleDetailView.vue';
+import DictionaryView from '@/views/DictionaryView.vue';
 import NewsView from '@/views/NewsView.vue';
 import StubView from '@/views/StubView.vue';
 
@@ -15,6 +16,12 @@ export const routes = [
     name: 'article',
     component: ArticleDetailView,
     meta: { title: 'Artikel' },
+  },
+  {
+    path: '/woerterbuch',
+    name: 'dictionary',
+    component: DictionaryView,
+    meta: { title: 'Wörterbuch' },
   },
   {
     path: '/stub',

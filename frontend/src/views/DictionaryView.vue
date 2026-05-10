@@ -1,0 +1,324 @@
+<script setup lang="ts">
+import AutoComplete, { type AutoCompleteCompleteEvent } from 'primevue/autocomplete';
+import Button from 'primevue/button';
+import Column from 'primevue/column';
+import DataTable from 'primevue/datatable';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Textarea from 'primevue/textarea';
+import { useConfirm } from 'primevue/useconfirm';
+import { useToast } from 'primevue/usetoast';
+import { reactive, ref, type Ref } from 'vue';
+import { useWordsDictionary } from '@/composables/useWordsDictionary';
+import type { Word, WordDifficulty } from '@/types/word';
+import { WORD_DIFFICULTIES } from '@/types/word';
+
+const toast = useToast();
+const confirm = useConfirm();
+
+const { items, loading, error, categoryFilter, knownCategories, create, update, remove } =
+  useWordsDictionary();
+
+const dialogVisible = ref(false);
+const editingId = ref<number | null>(null);
+const form = reactive({
+  german_label: '',
+  category: '',
+  translation: '',
+  difficulty: 'Neu' as WordDifficulty,
+  cefr_level: '',
+});
+const labelError = ref<string | null>(null);
+const saveInFlight = ref(false);
+
+const difficultySelectOptions = WORD_DIFFICULTIES.map((d) => ({ label: d, value: d }));
+
+const toolbarCategorySuggestions = ref<string[]>([]);
+const dialogCategorySuggestions = ref<string[]>([]);
+
+function filterCategorySuggestions(query: string, source: readonly string[]): string[] {
+  const q = query.trim().toLowerCase();
+  if (!q) {
+    return [...source];
+  }
+  return source.filter((c) => c.toLowerCase().includes(q));
+}
+
+function applyCategoryFilterSuggestions(
+  target: Ref<string[]>,
+  event: AutoCompleteCompleteEvent
+): void {
+  target.value = filterCategorySuggestions(event.query, knownCategories.value);
+}
+
+function onToolbarCategoryComplete(event: AutoCompleteCompleteEvent) {
+  applyCategoryFilterSuggestions(toolbarCategorySuggestions, event);
+}
+
+function onDialogCategoryComplete(event: AutoCompleteCompleteEvent) {
+  applyCategoryFilterSuggestions(dialogCategorySuggestions, event);
+}
+
+function resetForm() {
+  form.german_label = '';
+  form.category = '';
+  form.translation = '';
+  form.difficulty = 'Neu';
+  form.cefr_level = '';
+  labelError.value = null;
+}
+
+function openCreate() {
+  editingId.value = null;
+  resetForm();
+  dialogVisible.value = true;
+}
+
+function openEdit(row: Word) {
+  editingId.value = row.id;
+  form.german_label = row.german_label;
+  form.category = row.category;
+  form.translation = row.translation;
+  form.difficulty = row.difficulty;
+  form.cefr_level = row.cefr_level ?? '';
+  labelError.value = null;
+  dialogVisible.value = true;
+}
+
+function formatTs(iso: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString('de-CH', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  });
+}
+
+async function saveDialog() {
+  if (saveInFlight.value) {
+    return;
+  }
+  const trimmed = form.german_label.trim();
+  if (!trimmed) {
+    labelError.value = 'Deutschbezeichnung darf nicht leer sein.';
+    return;
+  }
+  labelError.value = null;
+  const cefr = form.cefr_level.trim() || null;
+  saveInFlight.value = true;
+  try {
+    if (editingId.value == null) {
+      const res = await create({
+        german_label: trimmed,
+        category: form.category.trim(),
+        translation: form.translation.trim(),
+        difficulty: form.difficulty,
+        cefr_level: cefr,
+      });
+      if (!res.ok) {
+        toast.add({ severity: 'error', summary: 'Speichern', detail: res.message, life: 6000 });
+        return;
+      }
+      toast.add({ severity: 'success', summary: 'Wort angelegt', life: 3000 });
+    } else {
+      const res = await update(editingId.value, {
+        german_label: trimmed,
+        category: form.category.trim(),
+        translation: form.translation.trim(),
+        difficulty: form.difficulty,
+        cefr_level: cefr,
+      });
+      if (!res.ok) {
+        toast.add({ severity: 'error', summary: 'Speichern', detail: res.message, life: 6000 });
+        return;
+      }
+      toast.add({ severity: 'success', summary: 'Wort aktualisiert', life: 3000 });
+    }
+    dialogVisible.value = false;
+  } finally {
+    saveInFlight.value = false;
+  }
+}
+
+function confirmDelete(row: Word) {
+  confirm.require({
+    message: `Eintrag «${row.german_label}» wirklich löschen?`,
+    header: 'Löschen bestätigen',
+    rejectProps: { label: 'Abbrechen', severity: 'secondary', outlined: true },
+    acceptProps: { label: 'Löschen', severity: 'danger' },
+    accept: () => {
+      void (async () => {
+        const res = await remove(row.id);
+        if (!res.ok) {
+          toast.add({ severity: 'error', summary: 'Löschen', detail: res.message, life: 6000 });
+          return;
+        }
+        toast.add({ severity: 'success', summary: 'Gelöscht', life: 3000 });
+      })();
+    },
+  });
+}
+</script>
+
+<template>
+  <div class="mx-auto max-w-5xl px-3 py-4 sm:px-4">
+    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h2 class="text-lg font-semibold text-slate-900">Wörterbuch</h2>
+        <p class="text-sm text-slate-600">
+          Einträge bearbeiten, filtern und verwalten (lokale Datenbank).
+        </p>
+      </div>
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
+        <div class="flex min-w-0 flex-col gap-1">
+          <label class="text-xs font-medium text-slate-600" for="dict-category-filter-input"
+            >Kategorie</label
+          >
+          <AutoComplete
+            v-model="categoryFilter"
+            input-id="dict-category-filter-input"
+            :suggestions="toolbarCategorySuggestions"
+            class="w-full min-w-[12rem] sm:w-56"
+            placeholder="Alle oder Kategorie wählen"
+            :dropdown="true"
+            :min-length="0"
+            :force-selection="false"
+            :show-clear="true"
+            complete-on-focus
+            @complete="onToolbarCategoryComplete"
+          />
+        </div>
+        <Button type="button" label="Neues Wort" class="shrink-0" @click="openCreate" />
+      </div>
+    </div>
+
+    <Message v-if="error" severity="error" class="mb-3" :closable="false">{{ error }}</Message>
+
+    <div class="-mx-1 overflow-x-auto sm:mx-0">
+      <DataTable
+        :value="items"
+        :loading="loading"
+        data-key="id"
+        striped-rows
+        scrollable
+        table-style="min-width: 52rem"
+        class="text-sm"
+        :pt="{ table: { class: 'text-sm' } }"
+      >
+        <template #empty>
+          <span class="text-slate-500">Keine Einträge.</span>
+        </template>
+        <Column field="german_label" header="Deutsch" />
+        <Column field="category" header="Kategorie" />
+        <Column field="difficulty" header="Schwierigkeit" style="width: 8rem" />
+        <Column field="translation" header="Übersetzung" />
+        <Column field="cefr_level" header="CEFR">
+          <template #body="{ data }">
+            {{ data.cefr_level ?? '—' }}
+          </template>
+        </Column>
+        <Column header="Erstellt" style="width: 9rem">
+          <template #body="{ data }">
+            {{ formatTs(data.created_at) }}
+          </template>
+        </Column>
+        <Column header="Aktualisiert" style="width: 9rem">
+          <template #body="{ data }">
+            {{ formatTs(data.updated_at) }}
+          </template>
+        </Column>
+        <Column header="" style="width: 11rem" :exportable="false">
+          <template #body="{ data }">
+            <div class="flex flex-wrap items-center gap-1">
+              <Button
+                type="button"
+                label="Bearbeiten"
+                size="small"
+                severity="secondary"
+                outlined
+                @click="openEdit(data)"
+              />
+              <Button
+                type="button"
+                label="Löschen"
+                size="small"
+                severity="danger"
+                outlined
+                @click="confirmDelete(data)"
+              />
+            </div>
+          </template>
+        </Column>
+      </DataTable>
+    </div>
+
+    <Dialog
+      v-model:visible="dialogVisible"
+      modal
+      :header="editingId == null ? 'Neues Wort' : 'Wort bearbeiten'"
+      class="w-[min(100vw-2rem,28rem)]"
+      :draggable="false"
+    >
+      <div class="flex flex-col gap-3 pt-1">
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-medium text-slate-700" for="wf-de">Deutschbezeichnung *</label>
+          <InputText id="wf-de" v-model="form.german_label" class="w-full" autocomplete="off" />
+          <p v-if="labelError" class="text-sm text-red-600">{{ labelError }}</p>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-medium text-slate-700" for="wf-cat-input">Kategorie</label>
+          <AutoComplete
+            v-model="form.category"
+            input-id="wf-cat-input"
+            :suggestions="dialogCategorySuggestions"
+            class="w-full"
+            placeholder="Bestehende wählen oder neue eingeben"
+            :dropdown="true"
+            :min-length="0"
+            :force-selection="false"
+            :show-clear="true"
+            complete-on-focus
+            @complete="onDialogCategoryComplete"
+          />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-medium text-slate-700" for="wf-diff">Schwierigkeit</label>
+          <Select
+            id="wf-diff"
+            v-model="form.difficulty"
+            :options="difficultySelectOptions"
+            option-label="label"
+            option-value="value"
+            class="w-full"
+          />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-medium text-slate-700" for="wf-tr">Übersetzung</label>
+          <Textarea id="wf-tr" v-model="form.translation" rows="3" class="w-full" auto-resize />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-medium text-slate-700" for="wf-cefr">CEFR (optional)</label>
+          <InputText id="wf-cefr" v-model="form.cefr_level" class="w-full" autocomplete="off" />
+        </div>
+      </div>
+      <template #footer>
+        <Button
+          type="button"
+          label="Abbrechen"
+          severity="secondary"
+          @click="dialogVisible = false"
+        />
+        <Button
+          type="button"
+          label="Speichern"
+          :loading="saveInFlight"
+          :disabled="saveInFlight"
+          @click="saveDialog"
+        />
+      </template>
+    </Dialog>
+  </div>
+</template>
