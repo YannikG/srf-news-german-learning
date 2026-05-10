@@ -48,8 +48,8 @@ jobs:
       - name: pytest
         run: python -m pytest
 
-  frontend-prettier:
-    name: Frontend (Prettier)
+  frontend:
+    name: Frontend (Prettier, build, Vitest)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,6 +57,15 @@ jobs:
         with:
           node-version: "20"
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
       - run: npm ci
+      - name: Frontend install, build, test
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          npm test
       - name: Prettier check
         run: npm run format:check

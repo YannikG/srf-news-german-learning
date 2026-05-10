@@ -4,11 +4,15 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 from flask import Flask
 
 from ..db import APP_DB_PATH
+
+_APP_PACKAGE_DIR = Path(__file__).resolve().parents[1]
+_DEFAULT_STATIC_SPA_DIR = _APP_PACKAGE_DIR / "static" / "spa"
 
 
 def read_int_env(name: str, default: int) -> int:
@@ -45,6 +49,10 @@ def normalize_ollama_idle_config(app: Flask) -> tuple[int, int]:
 def apply_default_config(app: Flask, test_config: Mapping[str, Any] | None) -> None:
     """Apply baseline config, then optional ``test_config`` overrides."""
     app.config.setdefault("DATABASE_PATH", str(APP_DB_PATH))
+    app.config.setdefault(
+        "STATIC_SPA_DIR",
+        os.environ.get("STATIC_SPA_DIR", str(_DEFAULT_STATIC_SPA_DIR)),
+    )
     app.config.setdefault("SIDECAR_BASE_URL", os.environ.get("SIDECAR_BASE_URL", ""))
     app.config.setdefault("SIDECAR_SHARED_SECRET", os.environ.get("SIDECAR_SHARED_SECRET", ""))
     app.config.setdefault("OLLAMA_BASE_URL", os.environ.get("OLLAMA_BASE_URL", ""))
