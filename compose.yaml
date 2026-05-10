@@ -1,5 +1,5 @@
 # Stack from repository root: `docker compose up` / `docker compose up -d`
-# See README.md and docs/roadmap/phase-1/README.md
+# See README.md, docs/roadmap/phase-1/README.md, docs/sidecar-api.md
 
 services:
   web:
@@ -11,6 +11,9 @@ services:
     volumes:
       # Single directory mount: SQLite expects files under /data, not named volumes on file paths.
       - app_data:/data
+    environment:
+      SIDECAR_BASE_URL: http://sidecar:8090
+      SIDECAR_SHARED_SECRET: ${SIDECAR_SHARED_SECRET:-dev-sidecar-secret}
     depends_on:
       - ollama
       - sidecar
@@ -23,8 +26,17 @@ services:
       - ollama_data:/root/.ollama
 
   sidecar:
-    image: alpine:3.21
-    command: ["sleep", "infinity"]
+    build:
+      context: ./sidecar
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"
+    volumes:
+      # rw bind: matches Docker API expectations for start/stop (see PR review on :ro).
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      SIDECAR_SHARED_SECRET: ${SIDECAR_SHARED_SECRET:-dev-sidecar-secret}
+      DOCKER_COMPOSE_PROJECT: ${COMPOSE_PROJECT_NAME:-}
     restart: unless-stopped
 
 volumes:

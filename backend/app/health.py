@@ -7,11 +7,21 @@ controls routing layout.
 
 from __future__ import annotations
 
-from flask import Blueprint, Response, jsonify
+from flask import Blueprint, Response, current_app, jsonify
+
+from .sidecar.client import probe_sidecar_inspect
 
 health_bp = Blueprint("health", __name__)
 
 
 @health_bp.get("/health")
 def health() -> tuple[Response, int]:
-    return jsonify(ok=True), 200
+    payload: dict = {"ok": True}
+    raw_base = current_app.config.get("SIDECAR_BASE_URL")
+    base = str(raw_base or "").strip()
+    if base:
+        secret = current_app.config.get("SIDECAR_SHARED_SECRET")
+        secret_str = secret if isinstance(secret, str) else ""
+        ok, err = probe_sidecar_inspect(base, secret_str or None)
+        payload["sidecar"] = {"status": "ok"} if ok else {"status": "error", "detail": err}
+    return jsonify(payload), 200
