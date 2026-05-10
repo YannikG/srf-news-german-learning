@@ -14,7 +14,12 @@ export async function fetchHealth(): Promise<FetchHealthResult> {
     if (!res.ok) {
       return { success: false, message: `HTTP ${res.status}` };
     }
-    const payload = (await res.json()) as HealthPayload;
+    let payload: HealthPayload;
+    try {
+      payload = (await res.json()) as HealthPayload;
+    } catch {
+      return { success: false, message: 'Ungültige JSON-Antwort' };
+    }
     return { success: true, payload };
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unbekannter Fehler';

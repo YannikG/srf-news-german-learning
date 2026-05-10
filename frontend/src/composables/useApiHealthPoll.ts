@@ -7,14 +7,18 @@ const DEFAULT_POLL_MS = 30_000;
 
 /**
  * Polls ``GET /api/health`` on mount and on an interval; exposes reactive footer text.
- * Lifecycle and scheduling only; HTTP lives in ``fetchHealth``, copy in ``formatHealthFooterLine``.
+ * Lifecycle and scheduling only; HTTP in ``fetchHealth``; footer copy in ``formatHealthFooterLine``.
  */
 export function useApiHealthPoll(pollMs: number = DEFAULT_POLL_MS) {
   const health = ref<HealthState>({ kind: 'loading' });
   let pollTimer: ReturnType<typeof setInterval> | undefined;
+  let stopped = false;
 
   async function refresh(): Promise<void> {
     const result = await fetchHealth();
+    if (stopped) {
+      return;
+    }
     if (result.success) {
       health.value = { kind: 'ok', payload: result.payload };
     } else {
@@ -28,8 +32,10 @@ export function useApiHealthPoll(pollMs: number = DEFAULT_POLL_MS) {
   });
 
   onUnmounted(() => {
+    stopped = true;
     if (pollTimer !== undefined) {
       clearInterval(pollTimer);
+      pollTimer = undefined;
     }
   });
 
