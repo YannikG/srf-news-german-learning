@@ -8,7 +8,9 @@ from sqlalchemy import text
 
 from ..persistence.sqlite_db import SqlDatabase
 
-_SELECT_COLUMNS = "id, default_cefr, translation_language, retrieval_top_k"
+_SELECT_COLUMNS = (
+    "id, default_cefr, translation_language, retrieval_top_k, retrieval_context_max_chars"
+)
 
 
 class SqliteSettingsRepository:
@@ -24,7 +26,12 @@ class SqliteSettingsRepository:
             return dict(row) if row else None
 
     def update_row(self, fields: dict[str, Any]) -> dict[str, Any] | None:
-        allowed = {"default_cefr", "translation_language", "retrieval_top_k"}
+        allowed = {
+            "default_cefr",
+            "translation_language",
+            "retrieval_top_k",
+            "retrieval_context_max_chars",
+        }
         subset = {k: v for k, v in fields.items() if k in allowed}
         with self._db.begin() as conn:
             if not subset:

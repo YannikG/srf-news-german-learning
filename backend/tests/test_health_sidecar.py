@@ -36,9 +36,9 @@ def client_sidecar(app_with_sidecar: Flask) -> FlaskClient:
     return app_with_sidecar.test_client()
 
 
-@patch("app.sidecar.client.httpx.Client")
+@patch("app.sidecar.client._sidecar_http")
 def test_health_sidecar_ok_when_inspect_succeeds(
-    mock_client_class: MagicMock,
+    mock_sidecar_http: MagicMock,
     client_sidecar: FlaskClient,
 ) -> None:
     mock_response = MagicMock()
@@ -46,10 +46,7 @@ def test_health_sidecar_ok_when_inspect_succeeds(
     mock_response.text = ""
     mock_http = MagicMock()
     mock_http.get.return_value = mock_response
-    mock_ctx = MagicMock()
-    mock_ctx.__enter__.return_value = mock_http
-    mock_ctx.__exit__.return_value = False
-    mock_client_class.return_value = mock_ctx
+    mock_sidecar_http.return_value = mock_http
 
     response = client_sidecar.get("/api/health")
 
@@ -63,9 +60,9 @@ def test_health_sidecar_ok_when_inspect_succeeds(
     assert kwargs["headers"]["X-Sidecar-Token"] == "test-secret"
 
 
-@patch("app.sidecar.client.httpx.Client")
+@patch("app.sidecar.client._sidecar_http")
 def test_health_sidecar_error_when_inspect_fails(
-    mock_client_class: MagicMock,
+    mock_sidecar_http: MagicMock,
     client_sidecar: FlaskClient,
 ) -> None:
     mock_response = MagicMock()
@@ -73,10 +70,7 @@ def test_health_sidecar_error_when_inspect_fails(
     mock_response.text = "unauthorized"
     mock_http = MagicMock()
     mock_http.get.return_value = mock_response
-    mock_ctx = MagicMock()
-    mock_ctx.__enter__.return_value = mock_http
-    mock_ctx.__exit__.return_value = False
-    mock_client_class.return_value = mock_ctx
+    mock_sidecar_http.return_value = mock_http
 
     response = client_sidecar.get("/api/health")
 

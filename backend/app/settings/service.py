@@ -9,6 +9,8 @@ from .ports import SettingsRepositoryPort
 ALLOWED_CEFR = frozenset({"A1", "A2", "B1", "B2", "C1", "C2"})
 ALLOWED_TRANSLATION_LANGUAGES = frozenset({"en", "uk"})
 RETRIEVAL_TOP_K_MAX = 500
+RETRIEVAL_CONTEXT_MAX_CHARS_MIN = 64
+RETRIEVAL_CONTEXT_MAX_CHARS_MAX = 500_000
 
 
 class SettingsServiceError(Exception):
@@ -39,6 +41,10 @@ class SettingsService:
             )
         if "retrieval_top_k" in data:
             updates["retrieval_top_k"] = _parse_retrieval_top_k(data["retrieval_top_k"])
+        if "retrieval_context_max_chars" in data:
+            updates["retrieval_context_max_chars"] = _parse_retrieval_context_max_chars(
+                data["retrieval_context_max_chars"],
+            )
         row = self._repo.update_row(updates)
         if row is None:
             raise SettingsServiceError("Settings row missing", 500)
@@ -50,6 +56,7 @@ def _public_row(row: dict[str, Any]) -> dict[str, Any]:
         "default_cefr": row["default_cefr"],
         "translation_language": row["translation_language"],
         "retrieval_top_k": row["retrieval_top_k"],
+        "retrieval_context_max_chars": row.get("retrieval_context_max_chars"),
     }
 
 
@@ -101,6 +108,30 @@ def _parse_retrieval_top_k(raw: Any) -> int | None:
     if raw > RETRIEVAL_TOP_K_MAX:
         raise SettingsServiceError(
             f"retrieval_top_k must be at most {RETRIEVAL_TOP_K_MAX}",
+            400,
+        )
+    return raw
+
+
+def _parse_retrieval_context_max_chars(raw: Any) -> int | None:
+    if raw is None:
+        return None
+    if isinstance(raw, bool):
+        raise SettingsServiceError("retrieval_context_max_chars must be an integer or null", 400)
+    if isinstance(raw, float):
+        if not raw.is_integer():
+            raise SettingsServiceError("retrieval_context_max_chars must be a whole number", 400)
+        raw = int(raw)
+    if not isinstance(raw, int):
+        raise SettingsServiceError("retrieval_context_max_chars must be an integer or null", 400)
+    if raw < RETRIEVAL_CONTEXT_MAX_CHARS_MIN:
+        raise SettingsServiceError(
+            f"retrieval_context_max_chars must be at least {RETRIEVAL_CONTEXT_MAX_CHARS_MIN}",
+            400,
+        )
+    if raw > RETRIEVAL_CONTEXT_MAX_CHARS_MAX:
+        raise SettingsServiceError(
+            f"retrieval_context_max_chars must be at most {RETRIEVAL_CONTEXT_MAX_CHARS_MAX}",
             400,
         )
     return raw

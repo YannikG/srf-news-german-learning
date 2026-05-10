@@ -13,7 +13,7 @@ docker compose up -d
 docker compose down
 ```
 
-Services: `web` (Flask Backend, siehe [`backend/README.md`](backend/README.md)), `ollama`, `sidecar` (HTTP-API für Start/Stop/Inspect von Ollama über den Docker-Socket, nur im Sidecar). API und `curl`-Beispiele: [`docs/sidecar-api.md`](docs/sidecar-api.md). Persistentes benanntes Volume `app_data` ist unter `/data` im `web`-Container eingehängt; spätere Phasen legen dort `app.db` und `vectors.db` ab.
+Services: `web` (Flask Backend, siehe [`backend/README.md`](backend/README.md)), `ollama`, `sidecar` (HTTP-API für Start/Stop/Inspect von Ollama über den Docker-Socket, nur im Sidecar). API und `curl`-Beispiele: [`docs/sidecar-api.md`](docs/sidecar-api.md). Der `web`-Service erhält `OLLAMA_BASE_URL` (Standard in `compose.yaml`: `http://ollama:11434` auf dem Compose-Netzwerk; überschreibbar mit Umgebungsvariable `OLLAMA_BASE_URL`). Persistentes benanntes Volume `app_data` ist unter `/data` im `web`-Container eingehängt; spätere Phasen legen dort `app.db` und `vectors.db` ab.
 
 Health-Smoketest gegen den laufenden Stack:
 
