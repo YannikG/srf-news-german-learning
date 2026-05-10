@@ -157,7 +157,9 @@ class OllamaIdleService:
                 logger.exception("Ollama idle warning listener failed")
 
         if should_stop:
-            assert epoch_snapshot is not None
+            if epoch_snapshot is None:
+                logger.error("Ollama idle poll: should_stop without epoch snapshot")
+                return
             # Hold the lock across ``_stop_fn`` so ``begin_request`` cannot bump
             # refcount/epoch between the last check and the sidecar stop (HTTP may
             # block for tens of seconds; new callers wait until stop returns).

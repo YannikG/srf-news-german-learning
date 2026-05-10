@@ -18,7 +18,13 @@ line-length = 100
 extend-exclude = [".venv", "venv", ".tmp-venv", "__pycache__"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "RET", "S"]
+# S105: false positives on OAuth URLs and header constant names. S608: SQLAlchemy ``text()``
+# with static fragments plus bound parameters still triggers bandit; review at call sites.
+ignore = ["S105", "S608"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S106", "S113"]
 
 [tool.ruff.format]
 quote-style = "double"

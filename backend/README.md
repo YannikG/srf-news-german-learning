@@ -151,11 +151,11 @@ Nach `pip install -r requirements-dev.txt` (enthält eine fixierte Ruff-Version)
 
 ```bash
 cd backend
-ruff check app tests wsgi.py
-ruff format --check app tests wsgi.py
+ruff check .
+ruff format --check .
 ```
 
-Zum Anwenden der Formatter-Ausgabe: `ruff format app tests wsgi.py`. Der Pre-Commit-Hook ruft `ruff` direkt auf, mit **aktiviertem Backend-venv** (wie oben bei `pip install`). Details und Prettier stehen im Root-[`README.md`](../README.md) im Abschnitt „Linting und Formatierung“.
+Zum Anwenden der Formatter-Ausgabe: `ruff format .` Der Pre-Commit-Hook nutzt fest **`backend/.venv/bin/python -m ruff`** (siehe `lint-staged` im Root-`package.json`); das venv muss also unter `backend/.venv` liegen. Details und Prettier stehen im Root-[`README.md`](../README.md) im Abschnitt „Linting und Formatierung“.
 
 ## Docker
 
