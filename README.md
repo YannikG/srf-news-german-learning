@@ -13,7 +13,7 @@ docker compose up -d
 docker compose down
 ```
 
-Services: `web` (Flask-Backend plus gebautes Vue-Frontend im selben Image, siehe [`backend/README.md`](backend/README.md)), `ollama`, `sidecar` (HTTP-API für Start/Stop/Inspect von Ollama über den Docker-Socket, nur im Sidecar). API und `curl`-Beispiele: [`docs/sidecar-api.md`](docs/sidecar-api.md). Der `web`-Service erhält `OLLAMA_BASE_URL` (Standard in `compose.yaml`: `http://ollama:11434` auf dem Compose-Netzwerk; überschreibbar mit Umgebungsvariable `OLLAMA_BASE_URL`). Persistentes benanntes Volume `app_data` ist unter `/data` im `web`-Container eingehängt; spätere Phasen legen dort `app.db` und `vectors.db` ab.
+Services: `web` (Flask-Backend plus gebautes Vue-Frontend im selben Image, siehe [`backend/README.md`](backend/README.md)), `ollama`, `sidecar` (HTTP-API für Start/Stop/Inspect von Ollama über den Docker-Socket, nur im Sidecar). API und `curl`-Beispiele: [`docs/sidecar-api.md`](docs/sidecar-api.md). Der `web`-Service erhält `OLLAMA_BASE_URL` (Standard in `compose.yaml`: `http://ollama:11434` auf dem Compose-Netzwerk; überschreibbar mit Umgebungsvariable `OLLAMA_BASE_URL`). Persistentes benanntes Volume `app_data` ist unter `/data` im `web`-Container eingehängt; die App legt dort bei Bedarf `app.db` und `vectors.db` an (Details im Backend-README).
 
 Health-Smoketest gegen den laufenden Stack:
 
@@ -55,7 +55,7 @@ Umgebungsvariablen: Beispiel [`frontend/.env.example`](frontend/.env.example). O
 ```bash
 cd backend
 source .venv/bin/activate
-pytest
+python -m pytest
 ```
 
 **Frontend** (Vitest, im Ordner `frontend/`):
@@ -106,7 +106,7 @@ npm run format:check
 npm run format
 ```
 
-**Git-Hooks (Husky, lint-staged):** einmalig nach dem Klonen im Repository-Root `npm install` ausführen. Das `prepare`-Skript richtet Husky ein. Beim Commit prüft lint-staged gestagte Backend-Pythondateien mit Ruff und Frontend-Dateien mit Prettier (Schreibmodus). Dafür muss in der Shell, in der `git commit` läuft, dasselbe **aktivierte Backend-venv** gelten wie oben, damit `ruff` im `PATH` liegt.
+**Git-Hooks (Husky, lint-staged):** einmalig nach dem Klonen im Repository-Root `npm install` ausführen. Das `prepare`-Skript richtet Husky ein. Beim Commit prüft lint-staged gestagte Backend-Pythondateien mit **`backend/.venv/bin/python -m ruff`** (Fix und Format) und Frontend-Dateien mit Prettier (Schreibmodus). Dafür muss das Backend-venv wie in [`backend/README.md`](backend/README.md) unter **`backend/.venv`** existieren; ein aktiviertes venv in der Commit-Shell ist für manuelle `ruff`- und `pytest`-Befehle weiterhin sinnvoll.
 
 **Ausnahmen (nur bewusst):** `git commit --no-verify` oder einmalig `HUSKY=0 git commit ...`, wenn ein Hook blockiert und die Ursache bekannt ist.
 
