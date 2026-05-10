@@ -5,6 +5,17 @@ export type ListWordsResult =
   | { ok: true; data: Word[] }
   | { ok: false; status: number; message: string };
 
+async function readErrorMessage(res: Response): Promise<string> {
+  let message = `HTTP ${res.status}`;
+  try {
+    const body = (await res.json()) as { error?: string };
+    if (body.error) message = body.error;
+  } catch {
+    /* ignore */
+  }
+  return message;
+}
+
 export async function listWords(params: { category?: string }): Promise<ListWordsResult> {
   const search = new URLSearchParams();
   if (params.category?.trim()) {
@@ -15,14 +26,7 @@ export async function listWords(params: { category?: string }): Promise<ListWord
   try {
     const res = await fetch(buildApiUrl(path), { headers: { Accept: 'application/json' } });
     if (!res.ok) {
-      let message = `HTTP ${res.status}`;
-      try {
-        const body = (await res.json()) as { error?: string };
-        if (body.error) message = body.error;
-      } catch {
-        /* ignore */
-      }
-      return { ok: false, status: res.status, message };
+      return { ok: false, status: res.status, message: await readErrorMessage(res) };
     }
     const raw: unknown = await res.json();
     if (!Array.isArray(raw)) {
@@ -38,17 +42,6 @@ export async function listWords(params: { category?: string }): Promise<ListWord
 export type WordMutationResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; message: string };
-
-async function readErrorMessage(res: Response): Promise<string> {
-  let message = `HTTP ${res.status}`;
-  try {
-    const body = (await res.json()) as { error?: string };
-    if (body.error) message = body.error;
-  } catch {
-    /* ignore */
-  }
-  return message;
-}
 
 export async function createWord(payload: WordCreatePayload): Promise<WordMutationResult<Word>> {
   try {
