@@ -41,8 +41,8 @@ Phase 4 kann nach Phase 1 parallel zu Phase 2 beginnen (getrennte Oberflächen),
 
 ## Review und Finalisierung (2026-05-09)
 
-- **Abdeckung:** Sieben Phasen, 25 Issue-Specs (darunter ein optionales P6-I06); Abhängigkeiten zwischen Specs per relativem Link geprüft; Cross-Phase-Links nutzen `../../phase-M/issues/...`.
-- **Phase 8 (2026-05-10):** Acht Issue-Specs unter [phase-8/README.md](./phase-8/README.md); baut auf Phase 2–7 auf (`P7 → P8`). **Nur Dokumentation** in der Planungs-PR; Umsetzung folgt in separaten Branches.
+- **Abdeckung:** Phasen 1–7 umfassen 25 Issue-Specs (darunter ein optionales P6-I06); Abhängigkeiten zwischen Specs per relativem Link geprüft; Cross-Phase-Links nutzen `../../phase-M/issues/...`.
+- **Phase 8 (2026-05-10):** Sieben Issue-Specs (P8-I01, I02, I03, I04, I05, I07, I08; keine P8-I06) unter [phase-8/README.md](./phase-8/README.md); baut auf Phase 2–7 auf (`P7 → P8`). **Nur Dokumentation** in der Planungs-PR; Umsetzung folgt in separaten Branches.
 - **Kritischer Pfad:** `P1 → P2 → P3` und parallel `P1 → P4`; danach `P5` (braucht `P2` + `P4`); `P6` nach funktionalen Backend-Endpunkten; `P7` als Qualitäts-Abschluss; `P8` für Multi-Provider und Rebranding-Pfad.
 - **Explizite Blocker:** [P3-I03](./phase-3/issues/P3-I03-news-refresh-ingest.md) setzt voraus, dass [P3-I02](./phase-3/issues/P3-I02-articles-api-mapping.md) abgeschlossen ist (Mapping-Dokument und Parser-Fixtures).
 - **Bewusste Annahme:** Lokale und CI-Tests nutzen Mocks für SRG und Ollama, wo Specs „ohne Netzwerk“ fordern; echte Container-Integration bleibt manuell oder optional `integration`-Marker.

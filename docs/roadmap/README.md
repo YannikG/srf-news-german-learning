@@ -16,7 +16,7 @@
 4. **Phase 5** erst, wenn **Phase 2 und Phase 4** die benötigten Schnittstellen haben (DB + Ollama-Lifecycle/SSE-Basis).  
 5. **Phase 6** baut auf den APIs von 3–5 auf; Shell (**P6-I01**) früh nach Phase 1 möglich.  
 6. **Phase 7** konsolidiert Tests, Lint und README nach dominiert fertiger Feature-Basis.  
-7. **Phase 8** erweitert News-Ingest (Multi-Provider, NewsAPI.org), UI-Herkunft, LLM-Übersetzung und abschliessenden Projekt-Rename; Details [phase-8/README.md](./phase-8/README.md) (Specs ohne Code in derselben PR-Disziplin möglich).
+7. **Phase 8** erweitert News-Ingest (Multi-Provider, NewsAPI.org), UI-Herkunft, LLM-Übersetzung und abschliessenden Projekt-Rename; Details [phase-8/README.md](./phase-8/README.md). Die zugehörigen Specs können in eigenen PRs ohne Anwendungscode gemergt werden.
 
 ## Tracker
 
