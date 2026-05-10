@@ -15,6 +15,8 @@ SQLite erzwingt `UNIQUE` auf `articles.external_id` (`001_initial.sql`). Mit meh
 
 - **Konvention festlegen:** Entweder stabiles **Präfix** pro Provider (`srgssr:…`, `newsapi:…`) oder **zusammengesetzter Unique** über neue Spalten (`news_provider` + Roh-ID), inkl. Migration bestehender SRGSSR-Zeilen (Backfill `news_provider`, ggf. `external_id`-Anpassung nur wenn nötig und dokumentiert risikoarm).
 
+**SQLite-Hinweis:** Ein bestehendes `UNIQUE(external_id)` lässt sich nicht per `ALTER TABLE` in einen zusammengesetzten Unique auf `(news_provider, external_id)` umbiegen. Dafür braucht es typischerweise **Tabellen-Rekreation** (neue Tabelle mit gewünschtem Constraint, Daten kopieren, alte Tabelle ersetzen) plus sorgfältige Trigger- und FTS-Buchhaltung. Die Spec muss diesen Migrationsaufwand explizit einkalkulieren, wenn die zusammengesetzte Variante gewählt wird. Die **Präfix-Strategie** auf einer Spalte `external_id` vermeidet oft diese Rekreation und reicht mit kontrolliertem `UPDATE` bestehender Zeilen.
+
 **Synergie:** `news_provider` aus [P8-I01](./P8-I01-env-active-provider-and-article-news-provider.md) muss mit Upsert und `ON CONFLICT` konsistent sein.
 
 ## Testable acceptance criteria

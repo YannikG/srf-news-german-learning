@@ -16,7 +16,7 @@
 `ArticleSimplifyService` und `_build_prompts` in `backend/app/articles/simplify_service.py` gehen heute von **deutschsprachigen Schweizer News** aus. Für Artikel mit **Quellsprache ausserhalb** der Zielmenge (z. B. nicht `de` / `gsw`) muss die Pipeline **ins Deutsche übersetzen** und anschliessend auf das gewählte **CEFR** vereinfachen, strukturierte JSON-Ausgabe unverändert.
 
 - **Persistenz:** Spalte oder zuverlässig ableitbare Metadaten `article_source_language` (NewsAPI-Feld `language`; SRGSSR aus Metadaten der Textblöcke).
-- **Lexikon-Retrieval:** Läuft auf `markdown_original`; bei Fremdsprache schwach — im Ticket eine Lösung festlegen (z. B. ein kombinierter LLM-Schritt Übersetzung+Vereinfachung+Vorschläge, oder zweistufig; Latenz/Kosten kurz dokumentieren).
+- **Lexikon-Retrieval:** Läuft heute auf `markdown_original`; bei **fremdsprachigem** Text liefert ein deutsch ausgerichtetes Lexikon oder Embedding-Raum oft **keine** sinnvollen Treffer. Im Ticket mindestens eine Strategie festlegen und begründen, zum Beispiel: **(a)** Retrieval auf **zwischenübersetztem** deutschen Text (nach erstem LLM-Schritt oder Zwischenspeicherung); **(b)** für konfigurierte Nicht-Deutsch-Sprachen **kein** Lexikon-Retrieval, stattdessen **nur** LLM-generierte Vorschläge aus dem Kontext im Prompt (ohne `used_word_ids` aus der DB, oder mit leerem Lexikon-Snippet und klaren Prompt-Regeln); **(c)** zweistufiger Aufruf mit dokumentierter Latenz- und Kostenfolge. Tradeoffs kurz in der Spec oder im PR beschreiben.
 
 ## Testable acceptance criteria
 
