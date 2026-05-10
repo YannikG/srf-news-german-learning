@@ -1,77 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { getApiBaseUrl } from '@/config/apiBase';
+import { useApiHealthPoll } from '@/composables/useApiHealthPoll';
 
 const route = useRoute();
-
-/** Mirrors ``GET /api/health`` JSON (subset). */
-interface HealthPayload {
-  ok: boolean;
-  sidecar?: { status: string; detail?: string };
-}
-
-type HealthState =
-  | { kind: 'loading' }
-  | { kind: 'ok'; payload: HealthPayload }
-  | { kind: 'error'; message: string };
-
-const health = ref<HealthState>({ kind: 'loading' });
-let pollTimer: ReturnType<typeof setInterval> | undefined;
-
-const POLL_MS = 30_000;
-
-async function loadHealth(): Promise<void> {
-  const base = getApiBaseUrl();
-  const url = `${base}/api/health`;
-  try {
-    const res = await fetch(url, { headers: { Accept: 'application/json' } });
-    if (!res.ok) {
-      health.value = { kind: 'error', message: `HTTP ${res.status}` };
-      return;
-    }
-    const payload = (await res.json()) as HealthPayload;
-    health.value = { kind: 'ok', payload };
-  } catch (e) {
-    const message = e instanceof Error ? e.message : 'Unbekannter Fehler';
-    health.value = { kind: 'error', message };
-  }
-}
-
-const statusLine = computed(() => {
-  const h = health.value;
-  if (h.kind === 'loading') {
-    return 'Status: wird geladen …';
-  }
-  if (h.kind === 'error') {
-    return `Status: ${h.message}`;
-  }
-  const apiOk = h.payload.ok;
-  const parts: string[] = [];
-  parts.push(apiOk ? 'API: OK' : 'API: Fehler');
-  const sc = h.payload.sidecar;
-  if (sc) {
-    const label = sc.status === 'ok' ? 'OK' : 'Fehler';
-    parts.push(`Sidecar: ${label}`);
-    if (sc.detail) {
-      parts.push(`(${sc.detail})`);
-    }
-  } else {
-    parts.push('Sidecar: nicht konfiguriert');
-  }
-  return parts.join(' · ');
-});
-
-onMounted(() => {
-  void loadHealth();
-  pollTimer = setInterval(() => void loadHealth(), POLL_MS);
-});
-
-onUnmounted(() => {
-  if (pollTimer !== undefined) {
-    clearInterval(pollTimer);
-  }
-});
+const { health, statusLine } = useApiHealthPoll();
 </script>
 
 <template>
