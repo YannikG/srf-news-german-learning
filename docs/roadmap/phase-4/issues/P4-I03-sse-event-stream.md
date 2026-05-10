@@ -15,9 +15,9 @@
 
 ## Testable acceptance criteria
 
-- [ ] `pytest` oder Integrationstest: Client liest mindestens ein Event nach simuliertem Zustandswechsel (oder Flask test client stream read).
-- [ ] Reconnect-Hinweis in README (Client-seitig).
-- [ ] Keine Secrets in Event-Payloads.
+- [x] `pytest` oder Integrationstest: Client liest mindestens ein Event nach simuliertem Zustandswechsel (oder Flask test client stream read).
+- [x] Reconnect-Hinweis in README (Client-seitig).
+- [x] Keine Secrets in Event-Payloads.
 
 ## Dev lifecycle
 
