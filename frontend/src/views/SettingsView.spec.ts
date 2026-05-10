@@ -68,14 +68,9 @@ describe('SettingsView', () => {
     });
   }
 
-  it('shows success toast after PATCH and verification GET succeed', async () => {
+  it('shows success toast after PATCH returns updated row', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({ ...baseRow }),
-      })
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -94,7 +89,7 @@ describe('SettingsView', () => {
     await wrapper.get('[data-testid="settings-save"]').trigger('click');
     await flushPromises();
 
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     const patchCall = fetchMock.mock.calls.find(
       (c) => (c[1] as RequestInit | undefined)?.method === 'PATCH'
     );

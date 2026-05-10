@@ -68,18 +68,7 @@ async function onSave() {
       });
       return;
     }
-    const verify = await fetchSettings();
-    if (!verify.ok) {
-      toast.add({
-        severity: 'warn',
-        summary: 'Gespeichert',
-        detail: `Einstellungen gespeichert, aber erneutes Laden ist fehlgeschlagen: ${verify.message}`,
-        life: 6000,
-      });
-      applyRow(res.data);
-      return;
-    }
-    applyRow(verify.data);
+    applyRow(res.data);
     toast.add({
       severity: 'success',
       summary: 'Einstellungen',
