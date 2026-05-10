@@ -31,12 +31,12 @@ Neue Tabellen: eigenes `…RepositoryPort` + `Sqlite…Repository`, Service dara
 
 **`ArticlesService`** nutzt **`ArticlesRepositoryPort`** und wirft bei Regelverletzungen **`ArticleServiceError`** (analog JSON-Fehlerantwort).
 
-**`SettingsService`** validiert CEFR-Stufen, Übersetzungssprache und optional ``retrieval_top_k``; bei Regelverletzungen **`SettingsServiceError`**.
+**`SettingsService`** validiert CEFR-Stufen, Übersetzungssprache und optional ``retrieval_top_k`` sowie ``retrieval_context_max_chars``; bei Regelverletzungen **`SettingsServiceError`**.
 
 ## Flask-Wiring
 
 1. In **`create_app`** (`app/bootstrap/factory.py`, exportiert über ``app``): sobald `DATABASE_PATH` gesetzt ist, wird **`SqlDatabase`** erzeugt und unter dem Schlüssel aus **`SQL_DATABASE_EXTENSION_KEY`** (aktuell `"sql_database"`) in **`app.extensions`** abgelegt. Zusätzlich wird **`VECTORS_DATABASE_PATH`** standardmässig auf ``vectors.db`` im gleichen Verzeichnis wie ``app.db`` gesetzt; sobald dieser Pfad gesetzt ist, werden **`VectorsDatabase`** und fehlende Datei-Bootstrap (sqlite-vec) unter **`VECTORS_DATABASE_EXTENSION_KEY`** registriert.
-2. Routen holen die Instanz mit **`current_app.extensions[…]`** und rufen **`build_words_service(db)`**, **`build_articles_service(db)`** oder **`build_settings_service(db)`** (`app/words/factory.py`, `app/articles/factory.py`, `app/settings/factory.py`) auf. Das sind die **Fabrik-Stellen**, an denen Service und Repository zusammengesteckt werden (kein verstecktes `new` in den Views). Für Embeddings dient **`build_word_embeddings_repository(vectors_db)`** (`app/vectors/factory.py`) als gleiches Muster.
+2. Routen holen die Instanz mit **`current_app.extensions[…]`** und rufen **`build_words_service(db)`**, **`build_articles_service(db)`** oder **`build_settings_service(db)`** (`app/words/factory.py`, `app/articles/factory.py`, `app/settings/factory.py`) auf. Das sind die **Fabrik-Stellen**, an denen Service und Repository zusammengesteckt werden (kein verstecktes `new` in den Views). Für Vektoren in ``vectors.db`` dient **`build_word_embeddings_repository(vectors_db)`** (`app/vectors/factory.py`). **Phase 5 (P5-I02):** **`OllamaEmbedClient`** (`app/ollama/embeddings.py`) ruft Ollama ``POST /api/embed`` auf; **`LexiconRetrievalService`** (`app/retrieval/service.py`, Fabrik **`build_lexicon_retrieval_service`** in ``app/retrieval/factory.py``) kombiniert Embeddings, KNN über **`WordEmbeddingsRepository`**, und Lexikon-Filter über **`WordsRepositoryPort`** (ohne eigene HTTP-Route).
 
 Tests setzen wie bisher `DATABASE_PATH` im `test_config`; `vectors.db` liegt dann implizit daneben. Beide Extensions werden mitregistriert.
 

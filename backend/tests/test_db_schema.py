@@ -122,6 +122,7 @@ def test_all_tables_and_indexes_exist(tmp_path: Path) -> None:
         assert "default_cefr" in settings
         assert "translation_language" in settings
         assert "retrieval_top_k" in settings
+        assert "retrieval_context_max_chars" in settings
 
         row = conn.execute("SELECT id, default_cefr, translation_language FROM settings").fetchone()
         assert row == (1, "B1", "en")

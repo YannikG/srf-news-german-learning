@@ -47,6 +47,10 @@ def apply_default_config(app: Flask, test_config: Mapping[str, Any] | None) -> N
     app.config.setdefault("DATABASE_PATH", str(APP_DB_PATH))
     app.config.setdefault("SIDECAR_BASE_URL", os.environ.get("SIDECAR_BASE_URL", ""))
     app.config.setdefault("SIDECAR_SHARED_SECRET", os.environ.get("SIDECAR_SHARED_SECRET", ""))
+    app.config.setdefault(
+        "OLLAMA_BASE_URL",
+        os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434"),
+    )
 
     if test_config is not None:
         app.config.update(test_config)

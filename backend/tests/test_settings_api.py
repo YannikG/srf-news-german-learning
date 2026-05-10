@@ -31,6 +31,7 @@ def test_get_settings_defaults(client: FlaskClient) -> None:
         "default_cefr": "B1",
         "translation_language": "en",
         "retrieval_top_k": None,
+        "retrieval_context_max_chars": None,
     }
 
 
@@ -45,12 +46,14 @@ def test_patch_get_round_trip_and_survives_new_app(tmp_path: Path) -> None:
                 "default_cefr": "A2",
                 "translation_language": "uk",
                 "retrieval_top_k": 12,
+                "retrieval_context_max_chars": 4096,
             },
         )
         assert code == 200
         assert body["default_cefr"] == "A2"
         assert body["translation_language"] == "uk"
         assert body["retrieval_top_k"] == 12
+        assert body["retrieval_context_max_chars"] == 4096
     finally:
         ext = app1.extensions.get(SQL_DATABASE_EXTENSION_KEY)
         if isinstance(ext, SqlDatabase):
@@ -65,6 +68,7 @@ def test_patch_get_round_trip_and_survives_new_app(tmp_path: Path) -> None:
             "default_cefr": "A2",
             "translation_language": "uk",
             "retrieval_top_k": 12,
+            "retrieval_context_max_chars": 4096,
         }
     finally:
         ext2 = app2.extensions.get(SQL_DATABASE_EXTENSION_KEY)

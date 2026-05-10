@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from sqlalchemy import text
@@ -18,6 +19,29 @@ class SqliteWordsRepository:
 
     def __init__(self, db: SqlDatabase) -> None:
         self._db = db
+
+    def count_words(self) -> int:
+        with self._db.begin() as conn:
+            row = conn.execute(text("SELECT COUNT(*) AS n FROM words")).mappings().one()
+            return int(row["n"])
+
+    def ids_in_lexicon(self, ids: Sequence[int]) -> set[int]:
+        raw = [int(i) for i in ids]
+        if not raw:
+            return set()
+        unique: list[int] = []
+        seen: set[int] = set()
+        for i in raw:
+            if i not in seen:
+                seen.add(i)
+                unique.append(i)
+        keys = [f"id_{j}" for j in range(len(unique))]
+        placeholders = ", ".join(f":{k}" for k in keys)
+        params = dict(zip(keys, unique, strict=True))
+        stmt = text(f"SELECT id FROM words WHERE id IN ({placeholders})")
+        with self._db.begin() as conn:
+            rows = conn.execute(stmt, params).fetchall()
+            return {int(r[0]) for r in rows}
 
     def list(self, *, category: str | None = None) -> list[dict[str, Any]]:
         with self._db.begin() as conn:

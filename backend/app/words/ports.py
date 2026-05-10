@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any, Protocol
 
 
 class WordsRepositoryPort(Protocol):
     """Word persistence; concrete implementation e.g. SQLite."""
+
+    def count_words(self) -> int:
+        """Return the number of rows in ``words``."""
+
+    def ids_in_lexicon(self, ids: Sequence[int]) -> set[int]:
+        """Return the subset of ``ids`` that exist as ``words.id`` (empty ``ids`` → empty set)."""
 
     def list(self, *, category: str | None = None) -> list[dict[str, Any]]: ...
 
