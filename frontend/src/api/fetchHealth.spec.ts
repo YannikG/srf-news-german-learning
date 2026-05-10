@@ -3,6 +3,7 @@ import { fetchHealth } from './fetchHealth';
 
 describe('fetchHealth', () => {
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -33,6 +34,30 @@ describe('fetchHealth', () => {
     const r = await fetchHealth();
     expect(r).toEqual({ success: false, message: 'HTTP 503' });
   });
+
+  it('returns timeout message when request is aborted', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, init?: RequestInit) => {
+        return new Promise<Response>((_resolve, reject) => {
+          const s = init?.signal;
+          if (!s) {
+            reject(new Error('no signal'));
+            return;
+          }
+          if (s.aborted) {
+            reject(new DOMException('Aborted', 'AbortError'));
+            return;
+          }
+          s.addEventListener('abort', () => {
+            reject(new DOMException('Aborted', 'AbortError'));
+          });
+        });
+      })
+    );
+    const r = await fetchHealth(35);
+    expect(r).toEqual({ success: false, message: 'Zeitüberschreitung beim Health-Check' });
+  }, 10_000);
 
   it('returns message when JSON body is invalid', async () => {
     vi.stubGlobal(

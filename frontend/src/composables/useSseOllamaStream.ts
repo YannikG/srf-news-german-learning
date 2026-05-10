@@ -36,6 +36,22 @@ function parseWarningSeconds(raw: unknown): number | null {
   return typeof w === 'number' && Number.isFinite(w) ? w : null;
 }
 
+function parseOllamaContainerPayload(raw: unknown): { state: string; name?: string } | null {
+  if (!isRecord(raw)) {
+    return null;
+  }
+  const st = raw.state;
+  if (typeof st !== 'string' || !st.trim()) {
+    return null;
+  }
+  const nm = raw.name;
+  const out: { state: string; name?: string } = { state: st.trim() };
+  if (typeof nm === 'string' && nm.trim()) {
+    out.name = nm.trim();
+  }
+  return out;
+}
+
 function parseLlmChunk(raw: unknown): { article_id: string; delta: string } | null {
   if (!isRecord(raw)) {
     return null;
@@ -53,6 +69,8 @@ function parseLlmChunk(raw: unknown): { article_id: string; delta: string } | nu
  */
 export function useSseOllamaStream() {
   const ollamaState = shallowRef<OllamaPublicState | null>(null);
+  /** Latest Docker ``state`` from SSE ``ollama_container`` (after start watcher); overrides health display until cleared. */
+  const ollamaContainerFromStream = shallowRef<{ state: string; name?: string } | null>(null);
   const streamPreview = ref('');
   const shutdownDialogOpen = ref(false);
   const shutdownWarningSeconds = ref(0);
@@ -96,6 +114,13 @@ export function useSseOllamaStream() {
     es.addEventListener('llm_done', () => {
       clearStreamPreview();
     });
+
+    es.addEventListener('ollama_container', (ev) => {
+      const parsed = parseOllamaContainerPayload(safeParseData(ev as MessageEvent));
+      if (parsed !== null) {
+        ollamaContainerFromStream.value = parsed;
+      }
+    });
   }
 
   function connect() {
@@ -109,6 +134,7 @@ export function useSseOllamaStream() {
   }
 
   function disconnect() {
+    ollamaContainerFromStream.value = null;
     source?.close();
     source = null;
   }
@@ -198,6 +224,7 @@ export function useSseOllamaStream() {
   return {
     ollamaState,
     ollamaBusy,
+    ollamaContainerFromStream,
     streamPreview,
     shutdownDialogOpen,
     shutdownWarningSeconds,

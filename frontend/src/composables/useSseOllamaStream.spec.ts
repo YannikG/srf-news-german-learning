@@ -164,6 +164,27 @@ describe('useSseOllamaStream', () => {
     expect(wrapper.get('[data-testid="preview"]').text()).toBe('');
   });
 
+  it('updates ollamaContainerFromStream on ollama_container SSE', async () => {
+    const Host = defineComponent({
+      template: '<span data-testid="oc">{{ ollamaContainerFromStream?.state ?? "none" }}</span>',
+      setup() {
+        return useSseOllamaStream();
+      },
+    });
+    lastWrapper = mount(Host, {
+      global: {
+        plugins: [
+          [PrimeVue, { theme: { preset: Aura, options: { darkModeSelector: false } } }],
+          ToastService,
+        ],
+      },
+    });
+    await flushPromises();
+    MockEventSource.instances[0].emit('ollama_container', { state: 'running', name: 'c1' });
+    await flushPromises();
+    expect(lastWrapper.get('[data-testid="oc"]').text()).toBe('running');
+  });
+
   it('returns ok false when cancel fetch throws', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
     const ThrowHarness = defineComponent({

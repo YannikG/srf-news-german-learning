@@ -11,6 +11,8 @@ export function formatOllamaContainerStateLabel(state: string): string {
     restarting: 'Neustart',
     dead: 'tot',
     removing: 'wird entfernt',
+    inspect_error: 'Sidecar-Inspect fehlgeschlagen',
+    unknown: 'unbekannt',
   };
   return map[s] ?? state;
 }

@@ -15,6 +15,7 @@ const toast = useToast();
 const { health, statusLine, refresh: refreshHealth } = useApiHealthPoll();
 const {
   ollamaState,
+  ollamaContainerFromStream,
   streamPreview,
   shutdownDialogOpen,
   shutdownWarningSeconds,
@@ -25,8 +26,12 @@ const {
 const showStreamBox = computed(() => streamPreview.value.length > 0);
 const sleepEnabled = computed(() => ollamaState.value?.idle_enabled === true);
 
-/** Docker container state from the last ``GET /api/health`` sidecar inspect (poll ~30s). */
+/** Docker container state: SSE ``ollama_container`` (after start) else ``GET /api/health`` (poll ~30s). */
 const ollamaRuntimeLine = computed(() => {
+  const sse = ollamaContainerFromStream.value;
+  if (sse?.state) {
+    return `Ollama-Container: ${formatOllamaContainerStateLabel(sse.state)}`;
+  }
   const h = health.value;
   if (h.kind !== 'ok') {
     return null;

@@ -8,6 +8,7 @@ from ..events.constants import EVENTS_SSE_HUB_KEY
 from ..events.hub import SseHub
 from ..sidecar.client import post_ollama_start
 from .constants import OLLAMA_IDLE_SERVICE_KEY
+from .inspect_watcher import spawn_ollama_container_inspect_watcher
 from .service import OllamaIdleService
 
 ollama_bp = Blueprint("ollama", __name__)
@@ -92,4 +93,5 @@ def start_ollama() -> tuple[Response, int]:
     hub = hub_raw if isinstance(hub_raw, SseHub) else None
     if hub is not None:
         hub.publish("ollama_state", svc.sse_public_state())
+    spawn_ollama_container_inspect_watcher(current_app._get_current_object(), base, secret)
     return jsonify(ok=True), 200
