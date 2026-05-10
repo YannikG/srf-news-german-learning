@@ -15,6 +15,14 @@ describe('App shell', () => {
 
   it('mounts layout with navigation and outlet', async () => {
     vi.stubGlobal(
+      'EventSource',
+      class {
+        close = vi.fn();
+        addEventListener = vi.fn();
+        constructor(_url: string) {}
+      }
+    );
+    vi.stubGlobal(
       'fetch',
       vi.fn().mockImplementation((input: RequestInfo | URL) => {
         const url =
