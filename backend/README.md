@@ -158,6 +158,8 @@ Zum Anwenden der Formatter-Ausgabe: `ruff format app tests wsgi.py`. Der Pre-Com
 
 The `web` image is built from the **repository root** (`compose.yaml` uses `context: .` and `dockerfile: backend/Dockerfile`). A **Node** stage runs `npm ci` and `npm run build` in `frontend/`, then copies `dist/` into `app/static/spa/` inside the Python image. Flask serves `GET /` and client-side routes when `index.html` is present there; `/api/*` is unchanged.
 
+The image entrypoint (`docker-entrypoint-web.sh`) ensures the Compose volume mount **`/data`** is writable by the non-root app user before starting Gunicorn (named volumes are often root-owned on first mount).
+
 Override the on-disk SPA directory with **`STATIC_SPA_DIR`** (absolute path). When `index.html` is missing (typical local `pytest` tree), no SPA routes are registered and `GET /` returns `404`.
 
 The runtime image is **Debian slim (glibc)** so the ``sqlite-vec`` wheel from PyPI loads; Alpine/musl is not used here. After `docker compose up -d` the health endpoint is reachable on the mapped port:

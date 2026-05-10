@@ -25,14 +25,19 @@ COPY backend/app ./app
 COPY backend/wsgi.py ./
 COPY --from=frontend-build /frontend/dist ./app/static/spa
 
-# Run as a non-root user; gunicorn binds to 8000 which does not need privileges.
 RUN useradd --create-home --uid 1001 appuser \
- && chown -R appuser:appuser /app
-USER appuser
+ && chown -R appuser:appuser /app \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends gosu \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY backend/docker-entrypoint-web.sh /docker-entrypoint-web.sh
+RUN chmod +x /docker-entrypoint-web.sh
 
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3).status == 200 else 1)"
+    CMD gosu appuser python -c "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3).status == 200 else 1)"
 
+ENTRYPOINT ["/docker-entrypoint-web.sh"]
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "wsgi:app"]
