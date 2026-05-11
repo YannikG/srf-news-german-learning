@@ -9,7 +9,11 @@ from typing import Any
 from sqlalchemy import text
 
 from ..persistence.sqlite_db import SqlDatabase
-from .constants import LAST_SUCCESSFUL_FETCH_METADATA_KEY, REFRESH_COOLDOWN_SECONDS
+from .constants import (
+    DEFAULT_REFRESH_ARTICLES_LIMIT,
+    LAST_SUCCESSFUL_FETCH_METADATA_KEY,
+    REFRESH_COOLDOWN_SECONDS,
+)
 from .errors import NewsRefreshError
 from .upstream_port import NewsIngestUpstreamPort
 
@@ -67,7 +71,7 @@ class NewsRefreshService:
         upstream: NewsIngestUpstreamPort,
         *,
         now_fn: Callable[[], datetime] | None = None,
-        articles_limit: int = 10,
+        articles_limit: int = DEFAULT_REFRESH_ARTICLES_LIMIT,
     ) -> None:
         self._db = db
         self._upstream = upstream

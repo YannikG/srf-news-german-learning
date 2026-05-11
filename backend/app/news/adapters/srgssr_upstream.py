@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from ...srg_articles.client import SrgArticlesApiClient, SrgArticlesApiError
 from ...srg_articles.mapping import map_article_to_app_db_fields
 from ...srg_oauth.client import SrgOAuthClient, SrgOAuthClientError, SrgOAuthHttpError
@@ -92,7 +94,7 @@ class SrgSsrNewsUpstreamAdapter(NewsIngestUpstreamPort):
             ) from exc
 
         slug = self._news_provider
-        rows: list[dict] = []
+        rows: list[dict[str, Any]] = []
         for record in page.results:
             row = map_article_to_app_db_fields(record)
             row["news_provider"] = slug

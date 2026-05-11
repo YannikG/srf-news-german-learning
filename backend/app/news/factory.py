@@ -10,6 +10,7 @@ from ..persistence.sqlite_db import SqlDatabase
 from ..srg_articles import SrgArticlesApiClient, SrgArticlesApiSettings
 from ..srg_oauth import build_srg_oauth_client
 from .adapters import SrgSsrNewsUpstreamAdapter
+from .constants import DEFAULT_REFRESH_ARTICLES_LIMIT
 from .service import NewsRefreshService
 
 
@@ -35,4 +36,4 @@ def build_default_news_refresh_service(app: Flask) -> NewsRefreshService:
         articles,
         news_provider=app.config["NEWS_ACTIVE_PROVIDER"],
     )
-    return NewsRefreshService(db, upstream, articles_limit=10)
+    return NewsRefreshService(db, upstream, articles_limit=DEFAULT_REFRESH_ARTICLES_LIMIT)
