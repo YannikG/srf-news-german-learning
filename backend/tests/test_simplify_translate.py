@@ -179,6 +179,29 @@ def test_german_article_uses_standard_prompt(
     assert "lexicon_words" in user_payload
 
 
+def test_regional_german_tag_uses_standard_prompt(
+    dbs: tuple[SqlDatabase, VectorsDatabase],
+) -> None:
+    """Regional tags like 'de-CH' are treated as German (lexicon retrieval path)."""
+    sdb, vdb = dbs
+    with sdb.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO articles (external_id, title, markdown_original, language) "
+                "VALUES ('srgssr:ch1', 'Schweizer News', 'Bericht aus der Schweiz.', 'de-CH')"
+            ),
+        )
+
+    chat = _FakeChat([json.dumps(_llm_payload())])
+    svc = _build_service(sdb, vdb, chat)
+    out = svc.simplify_article(1, "B1")
+
+    assert out["simplification_id"] >= 1
+    assert chat.last_system is not None
+    assert "Swiss German news articles" in chat.last_system
+    assert "Translate" not in chat.last_system
+
+
 def test_null_language_treated_as_german(
     dbs: tuple[SqlDatabase, VectorsDatabase],
 ) -> None:

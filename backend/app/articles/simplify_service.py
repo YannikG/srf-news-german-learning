@@ -173,10 +173,11 @@ class ArticleSimplifyService:
         markdown_original: str,
         language: str | None,
     ) -> dict[str, Any]:
-        is_foreign = language is not None and language.lower() not in _GERMAN_LANGUAGES
+        is_foreign = (
+            language is not None and language.split("-")[0].lower() not in _GERMAN_LANGUAGES
+        )
 
         if is_foreign:
-            snippets: list[dict[str, Any]] = []
             system, user = _build_prompts_translate(
                 source_language=language,
                 cefr_level=cefr_level,
