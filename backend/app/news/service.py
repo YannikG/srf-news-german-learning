@@ -15,6 +15,7 @@ from .constants import (
     REFRESH_COOLDOWN_SECONDS,
 )
 from .errors import NewsRefreshError
+from .external_id import namespace_external_id
 from .upstream_port import NewsIngestUpstreamPort
 
 __all__ = ["NewsRefreshError", "NewsRefreshService"]
@@ -96,6 +97,8 @@ class NewsRefreshService:
 
         page = self._upstream.fetch_normalized_page(limit=self._articles_limit, cursor=None)
         mappings = page.rows
+        for row in mappings:
+            row["external_id"] = namespace_external_id(row["news_provider"], row["external_id"])
         with self._db.begin() as conn:
             if mappings:
                 conn.execute(text(_UPSERT_ARTICLE_SQL), mappings)
