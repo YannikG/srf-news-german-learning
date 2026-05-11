@@ -200,8 +200,8 @@ def test_single_refresh_batch_upserts_two_distinct_articles(
     assert r.status_code == 200
     assert r.get_json()["articles_upserted"] == 2
     ids = (
-        "urn:pdp:faro_srf:article:fixture-001",
-        "urn:pdp:faro_srf:article:fixture-002",
+        "srgssr:urn:pdp:faro_srf:article:fixture-001",
+        "srgssr:urn:pdp:faro_srf:article:fixture-002",
     )
     with db.begin() as conn:
         n = conn.execute(
@@ -230,7 +230,7 @@ def test_duplicate_external_id_is_idempotent(tmp_path_factory: pytest.TempPathFa
         assert client.post("/api/news/refresh").status_code == 200
         frozen.tick(timedelta(seconds=900))
         assert client.post("/api/news/refresh").status_code == 200
-    ext_id = page["results"][0]["id"]
+    ext_id = "srgssr:" + page["results"][0]["id"]
     with db.begin() as conn:
         n = conn.execute(
             text("SELECT COUNT(*) AS c FROM articles WHERE external_id = :e"),
