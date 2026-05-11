@@ -1,4 +1,4 @@
-"""Construct the default :class:`~app.news.service.NewsRefreshService` (OAuth + articles HTTP)."""
+"""Construct the default :class:`~app.news.service.NewsRefreshService` (upstream adapter + HTTP)."""
 
 from __future__ import annotations
 
@@ -9,11 +9,12 @@ from ..persistence import SQL_DATABASE_EXTENSION_KEY
 from ..persistence.sqlite_db import SqlDatabase
 from ..srg_articles import SrgArticlesApiClient, SrgArticlesApiSettings
 from ..srg_oauth import build_srg_oauth_client
+from .adapters import SrgSsrNewsUpstreamAdapter
 from .service import NewsRefreshService
 
 
 def build_default_news_refresh_service(app: Flask) -> NewsRefreshService:
-    """Wire SQLite, shared ``httpx.Client``, OAuth token client, and articles API client."""
+    """Wire SQLite, shared ``httpx.Client``, SRGSSR upstream adapter."""
     db = app.extensions.get(SQL_DATABASE_EXTENSION_KEY)
     if not isinstance(db, SqlDatabase):
         msg = (
@@ -29,9 +30,9 @@ def build_default_news_refresh_service(app: Flask) -> NewsRefreshService:
         settings=articles_settings,
         http_client=shared_client,
     )
-    return NewsRefreshService(
-        db,
+    upstream = SrgSsrNewsUpstreamAdapter(
         oauth,
         articles,
         news_provider=app.config["NEWS_ACTIVE_PROVIDER"],
     )
+    return NewsRefreshService(db, upstream, articles_limit=10)
