@@ -162,3 +162,28 @@ def test_top_headlines_params_include_country() -> None:
 
     assert seen_params[0]["country"] == "de"
     assert "language" not in seen_params[0]
+
+
+def test_top_headlines_sources_omits_country() -> None:
+    """NewsAPI forbids mixing sources with country for top-headlines."""
+    seen_params: list[dict] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_params.append(dict(request.url.params))
+        return httpx.Response(200, json=_load_fixture())
+
+    settings = NewsApiSettings(
+        api_key="test-key",
+        endpoint="top-headlines",
+        default_country="de",
+        default_sources="bbc-news,cnn",
+    )
+    client = NewsApiClient(
+        settings=settings,
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    adapter = NewsApiUpstreamAdapter(client, settings, news_provider="newsapi")
+    adapter.fetch_normalized_page(limit=20)
+
+    assert seen_params[0]["sources"] == "bbc-news,cnn"
+    assert "country" not in seen_params[0]

@@ -52,7 +52,8 @@ def _build_newsapi_service(app: Flask, db: SqlDatabase) -> NewsRefreshService:
     from .adapters import NewsApiUpstreamAdapter
 
     settings = NewsApiSettings()
-    client = NewsApiClient(settings=settings)
+    shared_client = httpx.Client(timeout=30.0)
+    client = NewsApiClient(settings=settings, http_client=shared_client)
     upstream = NewsApiUpstreamAdapter(
         client,
         settings,

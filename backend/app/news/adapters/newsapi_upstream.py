@@ -100,11 +100,12 @@ class NewsApiUpstreamAdapter(NewsIngestUpstreamPort):
             if s.default_sort_by.strip():
                 params["sortBy"] = s.default_sort_by.strip()
         else:
-            if s.default_country.strip():
+            has_sources = bool(s.default_sources.strip())
+            if has_sources:
+                params["sources"] = s.default_sources.strip()
+            elif s.default_country.strip():
                 params["country"] = s.default_country.strip()
             if s.default_query.strip():
                 params["q"] = s.default_query.strip()
-            if s.default_sources.strip():
-                params["sources"] = s.default_sources.strip()
 
         return params
