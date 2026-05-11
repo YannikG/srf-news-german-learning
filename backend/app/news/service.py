@@ -77,7 +77,6 @@ class NewsRefreshService:
     ) -> None:
         self._db = db
         self._upstream = upstream
-        self._provider_slug = provider_slug
         self._metadata_key = metadata_key_for_provider(provider_slug)
         self._now_fn = now_fn or (lambda: datetime.now(UTC))
         self._articles_limit = articles_limit
