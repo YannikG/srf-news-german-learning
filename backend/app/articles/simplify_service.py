@@ -68,6 +68,9 @@ def _extract_json_object(raw: str) -> str:
     return text[start:end]
 
 
+_GERMAN_LANGUAGES = frozenset({"de", "gsw"})
+
+
 def _build_prompts(
     *,
     cefr_level: str,
@@ -90,6 +93,29 @@ def _build_prompts(
         "lexicon_words": lexicon_snippets,
     }
     user = json.dumps(user_payload, ensure_ascii=False)
+    return system, user
+
+
+def _build_prompts_translate(
+    *,
+    source_language: str,
+    cefr_level: str,
+    markdown_original: str,
+) -> tuple[str, str]:
+    """Build prompts for translating a non-German article into German + CEFR simplification."""
+    system = (
+        f"The following news article is written in {source_language}. "
+        "Translate it into German and rewrite it for language learners. "
+        f"Target CEFR level: {cefr_level}. "
+        "Respond with a single JSON object only (no prose before or after). "
+        "The JSON must match this shape: "
+        '{"markdown": string, "used_word_ids": number[], "suggestions": '
+        '[{"german_label": string, "translation": string, "category": string}]} '
+        "used_word_ids must be an empty array (no lexicon provided). "
+        "Provide between 3 and 4 suggestions of useful German vocabulary from the article. "
+        "markdown must be plain learner-friendly Markdown without images or figures."
+    )
+    user = json.dumps({"article_markdown": markdown_original}, ensure_ascii=False)
     return system, user
 
 
@@ -129,11 +155,13 @@ class ArticleSimplifyService:
         if not isinstance(markdown_original, str):
             raise ArticleSimplifyServiceError("Article markdown is missing", 500)
 
+        language: str | None = row.get("language")
+
         idle = self._idle
         if idle is not None:
             idle.begin_request()
         try:
-            return self._simplify_inner(article_id, cefr, markdown_original)
+            return self._simplify_inner(article_id, cefr, markdown_original, language)
         finally:
             if idle is not None:
                 idle.end_request()
@@ -143,30 +171,41 @@ class ArticleSimplifyService:
         article_id: int,
         cefr_level: str,
         markdown_original: str,
+        language: str | None,
     ) -> dict[str, Any]:
-        try:
-            top_ids = self._retrieval.top_word_ids_for_context(
-                markdown_original,
-                track_idle=False,
+        is_foreign = language is not None and language.lower() not in _GERMAN_LANGUAGES
+
+        if is_foreign:
+            snippets: list[dict[str, Any]] = []
+            system, user = _build_prompts_translate(
+                source_language=language,
+                cefr_level=cefr_level,
+                markdown_original=markdown_original,
             )
-        except RetrievalServiceError as exc:
-            logger.warning("Retrieval failed for simplify: %s", exc)
-            raise ArticleSimplifyServiceError(str(exc), 502) from exc
+        else:
+            try:
+                top_ids = self._retrieval.top_word_ids_for_context(
+                    markdown_original,
+                    track_idle=False,
+                )
+            except RetrievalServiceError as exc:
+                logger.warning("Retrieval failed for simplify: %s", exc)
+                raise ArticleSimplifyServiceError(str(exc), 502) from exc
 
-        snippets: list[dict[str, Any]] = []
-        for wid in top_ids:
-            w = self._words.get(wid)
-            if w is None:
-                continue
-            label = w.get("german_label")
-            if isinstance(label, str) and label.strip():
-                snippets.append({"id": wid, "german_label": label.strip()})
+            snippets = []
+            for wid in top_ids:
+                w = self._words.get(wid)
+                if w is None:
+                    continue
+                label = w.get("german_label")
+                if isinstance(label, str) and label.strip():
+                    snippets.append({"id": wid, "german_label": label.strip()})
 
-        system, user = _build_prompts(
-            cefr_level=cefr_level,
-            markdown_original=markdown_original,
-            lexicon_snippets=snippets,
-        )
+            system, user = _build_prompts(
+                cefr_level=cefr_level,
+                markdown_original=markdown_original,
+                lexicon_snippets=snippets,
+            )
 
         parts: list[str] = []
         try:

@@ -82,4 +82,5 @@ def map_article_to_app_db_fields(
         "markdown_original": markdown_original,
         "release_date": article.release_date,
         "modification_date": article.modification_date,
+        "language": "de",
     }
