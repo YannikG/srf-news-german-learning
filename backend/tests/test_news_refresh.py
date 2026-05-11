@@ -13,6 +13,7 @@ from freezegun import freeze_time
 from sqlalchemy import text
 
 from app import create_app
+from app.news.adapters import SrgSsrNewsUpstreamAdapter
 from app.news.constants import LAST_SUCCESSFUL_FETCH_METADATA_KEY
 from app.news.factory import build_default_news_refresh_service
 from app.news.routes import NEWS_REFRESH_SERVICE_CONFIG_KEY
@@ -53,7 +54,8 @@ def _make_refresh_app(tmp_path_factory: pytest.TempPathFactory, handler) -> tupl
         user_agent="test-agent",
         http_client=shared,
     )
-    service = NewsRefreshService(db, oauth, articles, news_provider="srgssr")
+    upstream = SrgSsrNewsUpstreamAdapter(oauth, articles, news_provider="srgssr")
+    service = NewsRefreshService(db, upstream)
     application.config[NEWS_REFRESH_SERVICE_CONFIG_KEY] = service
     return application, db
 

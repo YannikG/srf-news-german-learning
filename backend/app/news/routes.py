@@ -5,8 +5,9 @@ from __future__ import annotations
 from flask import Blueprint, Response, current_app, jsonify
 from pydantic import ValidationError
 
+from .errors import NewsRefreshError
 from .factory import build_default_news_refresh_service
-from .service import NewsRefreshError, NewsRefreshService
+from .service import NewsRefreshService
 
 NEWS_REFRESH_SERVICE_CONFIG_KEY = "NEWS_REFRESH_SERVICE"
 NEWS_REFRESH_SERVICE_EXT_KEY = "news_refresh_service"

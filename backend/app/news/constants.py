@@ -6,4 +6,7 @@ from __future__ import annotations
 # this many seconds since the last successful fetch (see P3-I03 roadmap issue).
 REFRESH_COOLDOWN_SECONDS = 900
 
+# Page size for one refresh upstream list call (SRG Articles API allows 1-10).
+DEFAULT_REFRESH_ARTICLES_LIMIT = 10
+
 LAST_SUCCESSFUL_FETCH_METADATA_KEY = "last_successful_articles_fetch_at"
