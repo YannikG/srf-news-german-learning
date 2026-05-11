@@ -85,10 +85,8 @@ function sanitizeHtml(html: string): string {
 }
 
 function stripHtml(html: string): string {
-  const clean = sanitizeHtml(html);
-  const tmp = document.createElement('div');
-  tmp.innerHTML = clean;
-  return tmp.textContent?.trim() ?? html;
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.body.textContent?.trim() ?? html;
 }
 
 function adoptPonsTranslation() {

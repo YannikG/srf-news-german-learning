@@ -78,7 +78,6 @@ class TestSuccessProxy:
         assert resp.status_code == 200
         data = resp.get_json()
         assert data["hits"] == hits
-        instance.close.assert_called_once()
 
 
 class TestErrorProxy:
@@ -92,7 +91,28 @@ class TestErrorProxy:
         assert resp.status_code == 503
         data = resp.get_json()
         assert "Tageslimit" in data["error"]
-        instance.close.assert_called_once()
+
+
+class TestDefaultDictFromSettings:
+    @patch("app.pons.routes.PonsDictionaryClient")
+    def test_uses_translation_language_uk(
+        self, mock_cls: object, pons_app: Flask, pons_client: FlaskClient
+    ) -> None:
+        """When ``l`` is omitted and ``translation_language`` is ``uk``, route uses ``deuk``."""
+        with pons_app.app_context():
+            tc = pons_client
+            tc.patch(
+                "/api/settings",
+                json={"translation_language": "uk"},
+                content_type="application/json",
+            )
+
+        instance = mock_cls.return_value  # type: ignore[union-attr]
+        instance.lookup.return_value = PonsLookupResult(hits=[])
+
+        resp = pons_client.get("/api/external/pons/dictionary?q=Haus")
+        assert resp.status_code == 200
+        instance.lookup.assert_called_once_with("Haus", "deuk")
 
 
 class TestHealthPonsFlag:

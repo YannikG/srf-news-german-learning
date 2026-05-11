@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -11,6 +12,30 @@ PONS_API_BASE = "https://api.pons.com"
 REQUEST_TIMEOUT_SECONDS = 10.0
 
 ALLOWED_DICTIONARIES = frozenset({"deen", "deuk", "dees", "defr", "deit", "dept"})
+
+_lock = threading.Lock()
+_shared_http: httpx.Client | None = None
+
+
+def _shared_pons_http() -> httpx.Client:
+    """Return a process-wide shared ``httpx.Client`` for PONS calls."""
+    global _shared_http
+    with _lock:
+        if _shared_http is None:
+            _shared_http = httpx.Client(
+                timeout=REQUEST_TIMEOUT_SECONDS,
+                limits=httpx.Limits(max_keepalive_connections=4, max_connections=8),
+            )
+        return _shared_http
+
+
+def reset_shared_pons_http_client() -> None:
+    """Close and discard the shared client (for test isolation)."""
+    global _shared_http
+    with _lock:
+        if _shared_http is not None:
+            _shared_http.close()
+            _shared_http = None
 
 
 class PonsDictionaryError(Exception):
