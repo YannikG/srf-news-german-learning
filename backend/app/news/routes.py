@@ -14,21 +14,45 @@ NEWS_REFRESH_SERVICE_EXT_KEY = "news_refresh_service"
 
 news_bp = Blueprint("news", __name__)
 
-_OAUTH_CONSUMER_ENV_FIELDS = frozenset({"SRGSSR_CONSUMER_KEY", "SRGSSR_CONSUMER_SECRET"})
+_SRGSSR_CONSUMER_ENV_FIELDS = frozenset({"SRGSSR_CONSUMER_KEY", "SRGSSR_CONSUMER_SECRET"})
+_NEWSAPI_REQUIRED_ENV_FIELDS = frozenset({"NEWSAPI_API_KEY"})
 
 
-def _is_only_missing_srgssr_consumer_credentials(exc: ValidationError) -> bool:
-    """True when validation failed solely because OAuth consumer env vars are absent."""
+def _is_only_missing_env_credentials(exc: ValidationError) -> tuple[bool, str]:
+    """Detect missing-credentials ``ValidationError`` and return a provider hint.
+
+    Returns ``(True, provider_hint)`` when all errors are ``type=missing`` and
+    every missing field belongs to a single known provider's required env vars.
+    """
     errors = exc.errors()
     if not errors:
-        return False
+        return False, ""
+    missing_fields: set[str] = set()
     for err in errors:
         if err.get("type") != "missing":
-            return False
+            return False, ""
         loc = err.get("loc") or ()
-        if not loc or str(loc[0]) not in _OAUTH_CONSUMER_ENV_FIELDS:
-            return False
-    return True
+        if not loc:
+            return False, ""
+        missing_fields.add(str(loc[0]))
+    if missing_fields <= _SRGSSR_CONSUMER_ENV_FIELDS:
+        return True, "srgssr"
+    if missing_fields <= _NEWSAPI_REQUIRED_ENV_FIELDS:
+        return True, "newsapi"
+    return False, ""
+
+
+_CREDENTIALS_MESSAGES: dict[str, tuple[str, str]] = {
+    "srgssr": (
+        "SRG OAuth is not configured: set SRGSSR_CONSUMER_KEY and "
+        "SRGSSR_CONSUMER_SECRET in the environment.",
+        "oauth_not_configured",
+    ),
+    "newsapi": (
+        "NewsAPI is not configured: set NEWSAPI_API_KEY in the environment.",
+        "newsapi_not_configured",
+    ),
+}
 
 
 def _news_refresh_service() -> NewsRefreshService:
@@ -40,13 +64,10 @@ def _news_refresh_service() -> NewsRefreshService:
         try:
             cached = build_default_news_refresh_service(current_app)
         except ValidationError as exc:
-            if _is_only_missing_srgssr_consumer_credentials(exc):
-                raise NewsRefreshError(
-                    "SRG OAuth is not configured: set SRGSSR_CONSUMER_KEY and "
-                    "SRGSSR_CONSUMER_SECRET in the environment.",
-                    503,
-                    code="oauth_not_configured",
-                ) from exc
+            is_creds, hint = _is_only_missing_env_credentials(exc)
+            if is_creds and hint in _CREDENTIALS_MESSAGES:
+                msg, code = _CREDENTIALS_MESSAGES[hint]
+                raise NewsRefreshError(msg, 503, code=code) from exc
             raise
         current_app.extensions[NEWS_REFRESH_SERVICE_EXT_KEY] = cached
     return cached  # type: ignore[no-any-return]
@@ -54,7 +75,7 @@ def _news_refresh_service() -> NewsRefreshService:
 
 @news_bp.post("/news/refresh")
 def post_news_refresh() -> tuple[Response, int]:
-    """Trigger an SRG articles fetch when outside the post-success cooldown window."""
+    """Trigger an upstream articles fetch when outside the post-success cooldown window."""
     try:
         payload = _news_refresh_service().refresh()
     except NewsRefreshError as exc:

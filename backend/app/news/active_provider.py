@@ -11,8 +11,7 @@ _IMPLEMENTED_SLUGS = frozenset({"srgssr", "newsapi"})
 def resolve_configured_news_active_provider(raw: str | None) -> str:
     """Return canonical ingest provider slug or raise ``ValueError`` with a clear message.
 
-    Empty or unset ``raw`` defaults to ``srgssr``. Known but unimplemented slugs
-    (e.g. ``newsapi``) raise until the NewsAPI path exists (roadmap P8-I04).
+    Empty or unset ``raw`` defaults to ``srgssr``.
     """
     if raw is None:
         return DEFAULT_NEWS_ACTIVE_PROVIDER
