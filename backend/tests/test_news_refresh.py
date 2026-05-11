@@ -287,6 +287,23 @@ def test_refresh_without_oauth_env_returns_503_json(
     assert "error" in data
 
 
+def test_refresh_newsapi_without_api_key_returns_503_json(
+    tmp_path_factory: pytest.TempPathFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("NEWSAPI_API_KEY", raising=False)
+    db_path = tmp_path_factory.mktemp("no_newsapi_key") / "app.db"
+    app = create_app(
+        {"TESTING": True, "DATABASE_PATH": str(db_path), "NEWS_ACTIVE_PROVIDER": "newsapi"},
+    )
+    r = app.test_client().post("/api/news/refresh")
+    assert r.status_code == 503
+    data = r.get_json()
+    assert isinstance(data, dict)
+    assert data.get("code") == "newsapi_not_configured"
+    assert "error" in data
+
+
 def test_default_service_factory_builds(
     tmp_path_factory: pytest.TempPathFactory,
     monkeypatch: pytest.MonkeyPatch,
@@ -329,6 +346,7 @@ class _FakeUpstream:
                     "release_date": "2024-01-01",
                     "modification_date": "2024-01-01",
                     "news_provider": self._provider,
+                    "language": None,
                 }
             ],
             next_cursor=None,

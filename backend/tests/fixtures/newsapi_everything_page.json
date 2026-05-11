@@ -1,0 +1,32 @@
+{
+  "status": "ok",
+  "totalResults": 2,
+  "articles": [
+    {
+      "source": {
+        "id": "spiegel-online",
+        "name": "Spiegel Online"
+      },
+      "author": "Max Mustermann",
+      "title": "Schweizer Wirtschaft wächst überraschend stark",
+      "description": "Die Schweizer Wirtschaft hat im ersten Quartal ein Wachstum von 1,2 Prozent verzeichnet.",
+      "url": "https://www.example.com/articles/schweizer-wirtschaft-2026",
+      "urlToImage": "https://www.example.com/images/wirtschaft.jpg",
+      "publishedAt": "2026-05-10T08:30:00Z",
+      "content": "Die Schweizer Wirtschaft hat im ersten Quartal ein überraschend starkes Wachstum verzeichnet. Experten hatten mit einem deutlich geringeren Anstieg gerechnet. Besonders der Dienstleistungssekt... [+1200 chars]"
+    },
+    {
+      "source": {
+        "id": null,
+        "name": "Tagesanzeiger.ch"
+      },
+      "author": null,
+      "title": "Neues Klimagesetz tritt in Kraft",
+      "description": "Ab dem 1. Juni gelten neue Vorschriften für den CO2-Ausstoss in der Schweiz.",
+      "url": "https://www.example.com/articles/klimagesetz-2026",
+      "urlToImage": null,
+      "publishedAt": "2026-05-09T14:15:00Z",
+      "content": "Das neue Klimagesetz bringt strengere Regeln für Industrie und Verkehr. Unternehmen müssen ihren CO2-Ausstoss bis 2030 um mindestens 40 Prozent reduzieren."
+    }
+  ]
+}

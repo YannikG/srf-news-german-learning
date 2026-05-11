@@ -38,14 +38,21 @@ def test_non_string_news_active_provider_in_test_config_raises(tmp_path: Path) -
         )
 
 
-def test_newsapi_provider_raises_not_implemented(
+def test_newsapi_provider_is_accepted(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("NEWS_ACTIVE_PROVIDER", "newsapi")
+    monkeypatch.setenv("NEWSAPI_API_KEY", "test-key")
+    monkeypatch.setenv("NEWSAPI_DEFAULT_QUERY", "Schweiz")
     db_path = tmp_path / "app.db"
-    with pytest.raises(ValueError, match="not implemented yet"):
-        create_app({"TESTING": True, "DATABASE_PATH": str(db_path)})
+    app = create_app({"TESTING": True, "DATABASE_PATH": str(db_path)})
+    try:
+        assert app.config["NEWS_ACTIVE_PROVIDER"] == "newsapi"
+    finally:
+        ext = app.extensions.get(SQL_DATABASE_EXTENSION_KEY)
+        if isinstance(ext, SqlDatabase):
+            ext.dispose()
 
 
 def test_test_config_overrides_env_provider(
