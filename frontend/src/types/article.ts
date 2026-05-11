@@ -8,6 +8,8 @@ export type ArticleListItem = {
   release_date: string;
   modification_date: string | null;
   cefr_level: string | null;
+  /** Ingest source slug (e.g. srgssr, newsapi). */
+  news_provider: string;
   created_at: string;
   updated_at: string;
 };

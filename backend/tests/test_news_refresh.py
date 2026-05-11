@@ -35,6 +35,7 @@ def _make_refresh_app(tmp_path_factory: pytest.TempPathFactory, handler) -> tupl
         {
             "TESTING": True,
             "DATABASE_PATH": str(db_path),
+            "NEWS_ACTIVE_PROVIDER": "srgssr",
         },
     )
     db = application.extensions[SQL_DATABASE_EXTENSION_KEY]
@@ -52,7 +53,7 @@ def _make_refresh_app(tmp_path_factory: pytest.TempPathFactory, handler) -> tupl
         user_agent="test-agent",
         http_client=shared,
     )
-    service = NewsRefreshService(db, oauth, articles)
+    service = NewsRefreshService(db, oauth, articles, news_provider="srgssr")
     application.config[NEWS_REFRESH_SERVICE_CONFIG_KEY] = service
     return application, db
 
@@ -87,6 +88,10 @@ def test_corrupt_last_fetch_metadata_does_not_block_refresh(
     assert r.status_code == 200
     assert r.get_json()["fetched"] is True
     assert len(article_requests) == 1
+    with db.begin() as conn:
+        row = conn.execute(text("SELECT news_provider FROM articles LIMIT 1")).fetchone()
+    assert row is not None
+    assert row[0] == "srgssr"
 
 
 def test_second_refresh_within_cooldown_skips_articles_http(
@@ -269,7 +274,9 @@ def test_refresh_without_oauth_env_returns_503_json(
     monkeypatch.delenv("SRGSSR_CONSUMER_KEY", raising=False)
     monkeypatch.delenv("SRGSSR_CONSUMER_SECRET", raising=False)
     db_path = tmp_path_factory.mktemp("no_oauth_env") / "app.db"
-    app = create_app({"TESTING": True, "DATABASE_PATH": str(db_path)})
+    app = create_app(
+        {"TESTING": True, "DATABASE_PATH": str(db_path), "NEWS_ACTIVE_PROVIDER": "srgssr"},
+    )
     r = app.test_client().post("/api/news/refresh")
     assert r.status_code == 503
     data = r.get_json()
@@ -285,6 +292,8 @@ def test_default_service_factory_builds(
     monkeypatch.setenv("SRGSSR_CONSUMER_KEY", "k")
     monkeypatch.setenv("SRGSSR_CONSUMER_SECRET", "s")
     db_path = tmp_path_factory.mktemp("db2") / "app.db"
-    app = create_app({"TESTING": True, "DATABASE_PATH": str(db_path)})
+    app = create_app(
+        {"TESTING": True, "DATABASE_PATH": str(db_path), "NEWS_ACTIVE_PROVIDER": "srgssr"},
+    )
     svc = build_default_news_refresh_service(app)
     assert isinstance(svc, NewsRefreshService)

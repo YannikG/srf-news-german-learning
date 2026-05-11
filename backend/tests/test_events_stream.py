@@ -26,6 +26,7 @@ def _db_app(tmp_path_factory: pytest.TempPathFactory, **extra_config):
         "OLLAMA_IDLE_SHUTDOWN_SECONDS": 600,
         "OLLAMA_SHUTDOWN_WARNING_SECONDS": 60,
         "OLLAMA_IDLE_START_POLL_THREAD": False,
+        "NEWS_ACTIVE_PROVIDER": "srgssr",
     }
     cfg.update(extra_config)
     return create_app(cfg)

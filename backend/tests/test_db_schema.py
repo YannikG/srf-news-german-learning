@@ -120,6 +120,7 @@ def test_all_tables_and_indexes_exist(tmp_path: Path) -> None:
 
         articles = _table_columns(conn, "articles")
         assert "cefr_level" in articles
+        assert "news_provider" in articles
 
         words = _table_columns(conn, "words")
         assert "cefr_level" in words

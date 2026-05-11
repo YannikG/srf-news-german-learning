@@ -22,6 +22,8 @@ services:
       SIDECAR_SHARED_SECRET: ${SIDECAR_SHARED_SECRET:-dev-sidecar-secret}
       # Ollama HTTP API on the Compose network (service name ``ollama``, internal port 11434).
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      # Ingest slug for refresh upserts and API exposure (default srgssr; see backend/.env.example).
+      NEWS_ACTIVE_PROVIDER: ${NEWS_ACTIVE_PROVIDER:-srgssr}
     depends_on:
       - ollama
       - sidecar

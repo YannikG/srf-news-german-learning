@@ -7,6 +7,7 @@ const sampleRow = {
   translation_language: 'en' as const,
   retrieval_top_k: null,
   retrieval_context_max_chars: null,
+  active_ingest_provider: 'srgssr',
 };
 
 describe('parseAppSettings', () => {
@@ -19,6 +20,7 @@ describe('parseAppSettings', () => {
         translation_language: 'en',
         retrieval_top_k: null,
         retrieval_context_max_chars: null,
+        active_ingest_provider: 'srgssr',
       })
     ).toBeNull();
   });
@@ -30,12 +32,14 @@ describe('parseAppSettings', () => {
         translation_language: 'en',
         retrieval_top_k: 3,
         retrieval_context_max_chars: null,
+        active_ingest_provider: 'srgssr',
       })
     ).toEqual({
       default_cefr: 'B1',
       translation_language: 'en',
       retrieval_top_k: 3,
       retrieval_context_max_chars: null,
+      active_ingest_provider: 'srgssr',
     });
   });
 
@@ -44,12 +48,14 @@ describe('parseAppSettings', () => {
       parseAppSettings({
         default_cefr: 'A2',
         translation_language: 'uk',
+        active_ingest_provider: 'srgssr',
       })
     ).toEqual({
       default_cefr: 'A2',
       translation_language: 'uk',
       retrieval_top_k: null,
       retrieval_context_max_chars: null,
+      active_ingest_provider: 'srgssr',
     });
   });
 });
@@ -101,6 +107,7 @@ describe('settingsApi', () => {
             translation_language: 'de',
             retrieval_top_k: null,
             retrieval_context_max_chars: null,
+            active_ingest_provider: 'srgssr',
           }),
       })
     );
@@ -115,7 +122,12 @@ describe('settingsApi', () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: () => Promise.resolve({ ...sampleRow, default_cefr: 'A2' }),
+      json: () =>
+        Promise.resolve({
+          ...sampleRow,
+          default_cefr: 'A2' as const,
+          active_ingest_provider: 'srgssr',
+        }),
     });
     vi.stubGlobal('fetch', fetchMock);
 

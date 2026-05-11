@@ -13,7 +13,7 @@ docker compose up -d
 docker compose down
 ```
 
-Services: `web` (Flask-Backend plus gebautes Vue-Frontend im selben Image, siehe [`backend/README.md`](backend/README.md)), `ollama`, `sidecar` (HTTP-API für Start/Stop/Inspect von Ollama über den Docker-Socket, nur im Sidecar). API und `curl`-Beispiele: [`docs/sidecar-api.md`](docs/sidecar-api.md). Der `web`-Service erhält `OLLAMA_BASE_URL` (Standard in `compose.yaml`: `http://ollama:11434` auf dem Compose-Netzwerk; überschreibbar mit Umgebungsvariable `OLLAMA_BASE_URL`). Persistentes benanntes Volume `app_data` ist unter `/data` im `web`-Container eingehängt; die App legt dort bei Bedarf `app.db` und `vectors.db` an (Details im Backend-README).
+Services: `web` (Flask-Backend plus gebautes Vue-Frontend im selben Image, siehe [`backend/README.md`](backend/README.md)), `ollama`, `sidecar` (HTTP-API für Start/Stop/Inspect von Ollama über den Docker-Socket, nur im Sidecar). API und `curl`-Beispiele: [`docs/sidecar-api.md`](docs/sidecar-api.md). Der `web`-Service erhält `OLLAMA_BASE_URL` (Standard in `compose.yaml`: `http://ollama:11434` auf dem Compose-Netzwerk; überschreibbar mit Umgebungsvariable `OLLAMA_BASE_URL`) und optional `NEWS_ACTIVE_PROVIDER` (Standard `srgssr`, siehe Backend-README). Persistentes benanntes Volume `app_data` ist unter `/data` im `web`-Container eingehängt; die App legt dort bei Bedarf `app.db` und `vectors.db` an (Details im Backend-README).
 
 Health-Smoketest gegen den laufenden Stack:
 

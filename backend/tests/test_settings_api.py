@@ -32,12 +32,15 @@ def test_get_settings_defaults(client: FlaskClient) -> None:
         "translation_language": "en",
         "retrieval_top_k": None,
         "retrieval_context_max_chars": None,
+        "active_ingest_provider": "srgssr",
     }
 
 
 def test_patch_get_round_trip_and_survives_new_app(tmp_path: Path) -> None:
     db_path = tmp_path / "app.db"
-    app1 = create_app({"TESTING": True, "DATABASE_PATH": str(db_path)})
+    app1 = create_app(
+        {"TESTING": True, "DATABASE_PATH": str(db_path), "NEWS_ACTIVE_PROVIDER": "srgssr"},
+    )
     try:
         c1 = app1.test_client()
         body, code = _patch_json(
@@ -54,12 +57,15 @@ def test_patch_get_round_trip_and_survives_new_app(tmp_path: Path) -> None:
         assert body["translation_language"] == "uk"
         assert body["retrieval_top_k"] == 12
         assert body["retrieval_context_max_chars"] == 4096
+        assert body["active_ingest_provider"] == "srgssr"
     finally:
         ext = app1.extensions.get(SQL_DATABASE_EXTENSION_KEY)
         if isinstance(ext, SqlDatabase):
             ext.dispose()
 
-    app2 = create_app({"TESTING": True, "DATABASE_PATH": str(db_path)})
+    app2 = create_app(
+        {"TESTING": True, "DATABASE_PATH": str(db_path), "NEWS_ACTIVE_PROVIDER": "srgssr"},
+    )
     try:
         c2 = app2.test_client()
         res = c2.get("/api/settings")
@@ -69,6 +75,7 @@ def test_patch_get_round_trip_and_survives_new_app(tmp_path: Path) -> None:
             "translation_language": "uk",
             "retrieval_top_k": 12,
             "retrieval_context_max_chars": 4096,
+            "active_ingest_provider": "srgssr",
         }
     finally:
         ext2 = app2.extensions.get(SQL_DATABASE_EXTENSION_KEY)

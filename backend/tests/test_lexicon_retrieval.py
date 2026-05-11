@@ -320,6 +320,7 @@ def test_build_lexicon_retrieval_service_requires_ollama_base_url(
             "TESTING": True,
             "DATABASE_PATH": str(db_path),
             "OLLAMA_BASE_URL": "   ",
+            "NEWS_ACTIVE_PROVIDER": "srgssr",
         },
     )
     try:

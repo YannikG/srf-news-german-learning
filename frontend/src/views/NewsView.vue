@@ -2,6 +2,7 @@
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import ProgressSpinner from 'primevue/progressspinner';
+import Tag from 'primevue/tag';
 import { computed, ref } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useArticlesList } from '@/composables/useArticlesList';
@@ -9,6 +10,7 @@ import { useDebouncedRef } from '@/composables/useDebouncedRef';
 import { useNewsDateRouteSync } from '@/composables/useNewsDateRouteSync';
 import { useNewsRefresh } from '@/composables/useNewsRefresh';
 import { notifyPostNewsRefresh } from '@/news/notifyPostNewsRefresh';
+import { newsProviderLabel } from '@/utils/newsProviderLabel';
 import { stripMediaFromText } from '@/utils/stripMediaFromText';
 
 const toast = useToast();
@@ -129,7 +131,7 @@ async function onTouchEnd() {
     </p>
 
     <p v-if="cooldownActive && cooldownLabel" class="text-xs text-amber-800">
-      Nächster SRG-Abruf ab {{ cooldownLabel }} möglich.
+      Nächster Abruf ab {{ cooldownLabel }} möglich.
     </p>
 
     <label class="flex w-full flex-col gap-1 text-xs font-medium text-slate-600">
@@ -155,7 +157,14 @@ async function onTouchEnd() {
           :to="{ name: 'article', params: { id: a.id }, query: { d: selectedDate } }"
           class="block rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow"
         >
-          <p class="text-xs text-slate-500">{{ a.release_date }}</p>
+          <div class="flex flex-wrap items-center gap-2">
+            <p class="text-xs text-slate-500">{{ a.release_date }}</p>
+            <Tag
+              :value="`Quelle: ${newsProviderLabel(a.news_provider)}`"
+              severity="secondary"
+              class="text-xs"
+            />
+          </div>
           <h3 class="font-semibold text-slate-900">{{ stripMediaFromText(a.title) }}</h3>
           <p v-if="leadPreview(a.lead)" class="mt-1 line-clamp-3 text-sm text-slate-600">
             {{ leadPreview(a.lead) }}

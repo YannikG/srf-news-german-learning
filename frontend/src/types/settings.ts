@@ -12,6 +12,8 @@ export type AppSettings = {
   translation_language: TranslationLanguage;
   retrieval_top_k: number | null;
   retrieval_context_max_chars: number | null;
+  /** Read-only: configured ingest slug (e.g. srgssr); not persisted in DB. */
+  active_ingest_provider: string;
 };
 
 /** Partial body for ``PATCH /api/settings`` from the settings screen. */

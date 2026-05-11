@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import SelectButton from 'primevue/selectbutton';
 import ProgressSpinner from 'primevue/progressspinner';
+import Tag from 'primevue/tag';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import type { RouteLocationRaw } from 'vue-router';
 import { useRoute } from 'vue-router';
@@ -8,6 +9,7 @@ import { fetchArticleDetail } from '@/api/fetchArticles';
 import type { ArticleDetail } from '@/types/article';
 import { renderArticleMarkdown } from '@/utils/renderArticleMarkdown';
 import { parseIsoDateQueryParam } from '@/utils/routerQueryDate';
+import { newsProviderLabel } from '@/utils/newsProviderLabel';
 import { stripMediaFromText } from '@/utils/stripMediaFromText';
 
 const route = useRoute();
@@ -110,7 +112,14 @@ onUnmounted(() => {
 
     <template v-else-if="article">
       <header class="border-b border-slate-200 pb-4">
-        <p class="text-xs text-slate-500">{{ article.release_date }}</p>
+        <div class="flex flex-wrap items-center gap-2">
+          <p class="text-xs text-slate-500">{{ article.release_date }}</p>
+          <Tag
+            :value="`Quelle: ${newsProviderLabel(article.news_provider)}`"
+            severity="secondary"
+            class="text-xs"
+          />
+        </div>
         <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">
           {{ stripMediaFromText(article.title) }}
         </h1>

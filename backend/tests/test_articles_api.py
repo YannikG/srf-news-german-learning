@@ -65,6 +65,7 @@ def test_list_pagination_with_cursor(client: FlaskClient, app: Flask, fixed_toda
     assert len(body["items"]) == 2
     assert body["next_cursor"] is not None
     assert "markdown_original" not in body["items"][0]
+    assert body["items"][0].get("news_provider") == "srgssr"
 
     second = client.get(f"/api/articles?limit=2&cursor={body['next_cursor']}")
     assert second.status_code == 200
@@ -155,6 +156,7 @@ def test_get_article_by_id_returns_markdown(client: FlaskClient, app: Flask) -> 
     assert isinstance(row, dict)
     assert row["markdown_original"] == "## Inhalt\n\nHallo."
     assert row["title"] == "Eins"
+    assert row.get("news_provider") == "srgssr"
     assert row.get("markdown_simplified") is None
     assert row.get("simplification_cefr_level") is None
 

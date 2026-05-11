@@ -68,11 +68,16 @@ export function parseAppSettings(body: unknown): AppSettings | null {
   if (!isIntOrNullish(o.retrieval_context_max_chars)) {
     return null;
   }
+  const ingest = o.active_ingest_provider;
+  if (typeof ingest !== 'string' || !ingest.trim()) {
+    return null;
+  }
   return {
     default_cefr: dc,
     translation_language: tl,
     retrieval_top_k: o.retrieval_top_k ?? null,
     retrieval_context_max_chars: o.retrieval_context_max_chars ?? null,
+    active_ingest_provider: ingest.trim(),
   };
 }
 
