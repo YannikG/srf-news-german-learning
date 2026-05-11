@@ -21,7 +21,7 @@ _LIST_COLUMNS_QUALIFIED = (
 )
 
 _DETAIL_WITH_SIMPLIFICATION = (
-    f"{_LIST_COLUMNS_QUALIFIED}, a.markdown_original, "
+    f"{_LIST_COLUMNS_QUALIFIED}, a.markdown_original, a.language, "
     "s.markdown_simplified AS markdown_simplified, "
     "s.cefr_level AS simplification_cefr_level "
 )
