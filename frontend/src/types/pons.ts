@@ -30,11 +30,3 @@ export interface PonsHitTranslation {
 }
 
 export type PonsHit = PonsHitEntry | PonsHitTranslation;
-
-export interface PonsLookupResponse {
-  hits: PonsHit[];
-}
-
-export interface PonsLookupError {
-  error: string;
-}

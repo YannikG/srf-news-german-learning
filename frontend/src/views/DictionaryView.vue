@@ -12,6 +12,7 @@ import Select from 'primevue/select';
 import Textarea from 'primevue/textarea';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
+import DOMPurify from 'dompurify';
 import { reactive, ref, type Ref } from 'vue';
 import { usePonsLookup } from '@/composables/usePonsLookup';
 import { useWordsDictionary } from '@/composables/useWordsDictionary';
@@ -79,9 +80,14 @@ function extractFirstTarget(hits: PonsHit[]): string | null {
   return null;
 }
 
+function sanitizeHtml(html: string): string {
+  return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+}
+
 function stripHtml(html: string): string {
+  const clean = sanitizeHtml(html);
   const tmp = document.createElement('div');
-  tmp.innerHTML = html;
+  tmp.innerHTML = clean;
   return tmp.textContent?.trim() ?? html;
 }
 
@@ -404,7 +410,7 @@ function confirmDelete(row: Word) {
             <template v-for="(hit, hi) in ponsPopoverHits" :key="hi">
               <template v-if="hit.type === 'translation'">
                 <li class="rounded bg-slate-50 px-2 py-1">
-                  <span v-html="hit.target"></span>
+                  <span v-html="sanitizeHtml(hit.target)"></span>
                 </li>
               </template>
               <template v-else-if="hit.type === 'entry'">
@@ -415,7 +421,7 @@ function confirmDelete(row: Word) {
                       :key="`${hi}-${ri}-${ai}-${ti}`"
                       class="rounded bg-slate-50 px-2 py-1"
                     >
-                      <span v-html="tr.target"></span>
+                      <span v-html="sanitizeHtml(tr.target)"></span>
                     </li>
                   </template>
                 </template>

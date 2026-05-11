@@ -32,7 +32,7 @@ export function usePonsLookup() {
 
   async function lookup(germanLabel: string, dictionary?: string): Promise<PonsLookupResult> {
     const existing = wordStates.value.get(germanLabel);
-    if (existing?.hits !== null && existing?.error === null && existing?.loading === false) {
+    if (existing && !existing.loading && existing.hits !== null && existing.error === null) {
       return { ok: true, hits: existing.hits };
     }
 

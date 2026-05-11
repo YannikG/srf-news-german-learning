@@ -12,11 +12,6 @@ REQUEST_TIMEOUT_SECONDS = 10.0
 
 ALLOWED_DICTIONARIES = frozenset({"deen", "deuk", "dees", "defr", "deit", "dept"})
 
-TRANSLATION_LANGUAGE_TO_DICT: dict[str, str] = {
-    "en": "deen",
-    "uk": "deuk",
-}
-
 
 class PonsDictionaryError(Exception):
     """Domain error raised when the PONS lookup fails."""
