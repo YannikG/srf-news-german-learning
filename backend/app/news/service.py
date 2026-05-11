@@ -11,8 +11,8 @@ from sqlalchemy import text
 from ..persistence.sqlite_db import SqlDatabase
 from .constants import (
     DEFAULT_REFRESH_ARTICLES_LIMIT,
-    LAST_SUCCESSFUL_FETCH_METADATA_KEY,
     REFRESH_COOLDOWN_SECONDS,
+    metadata_key_for_provider,
 )
 from .errors import NewsRefreshError
 from .external_id import namespace_external_id
@@ -71,11 +71,13 @@ class NewsRefreshService:
         db: SqlDatabase,
         upstream: NewsIngestUpstreamPort,
         *,
+        provider_slug: str,
         now_fn: Callable[[], datetime] | None = None,
         articles_limit: int = DEFAULT_REFRESH_ARTICLES_LIMIT,
     ) -> None:
         self._db = db
         self._upstream = upstream
+        self._metadata_key = metadata_key_for_provider(provider_slug)
         self._now_fn = now_fn or (lambda: datetime.now(UTC))
         self._articles_limit = articles_limit
 
@@ -105,7 +107,7 @@ class NewsRefreshService:
             conn.execute(
                 text(_METADATA_UPSERT_SQL),
                 {
-                    "key": LAST_SUCCESSFUL_FETCH_METADATA_KEY,
+                    "key": self._metadata_key,
                     "value": _utc_now_iso(now),
                 },
             )
@@ -122,7 +124,7 @@ class NewsRefreshService:
             row = (
                 conn.execute(
                     text("SELECT value FROM srg_sync_metadata WHERE key = :key"),
-                    {"key": LAST_SUCCESSFUL_FETCH_METADATA_KEY},
+                    {"key": self._metadata_key},
                 )
                 .mappings()
                 .first()

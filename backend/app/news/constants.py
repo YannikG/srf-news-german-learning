@@ -1,12 +1,21 @@
-"""Constants for the news refresh feature (SRG ingest cooldown)."""
+"""Constants for the news refresh feature (per-provider cooldown)."""
 
 from __future__ import annotations
 
-# Cooldown after a successful upstream articles fetch. Spec: no SRG HTTP calls within
-# this many seconds since the last successful fetch (see P3-I03 roadmap issue).
+# Cooldown after a successful upstream articles fetch (seconds).
 REFRESH_COOLDOWN_SECONDS = 900
 
 # Page size for one refresh upstream list call (SRG Articles API allows 1-10).
 DEFAULT_REFRESH_ARTICLES_LIMIT = 10
 
-LAST_SUCCESSFUL_FETCH_METADATA_KEY = "last_successful_articles_fetch_at"
+# Per-provider metadata key pattern: "last_successful_articles_fetch_at:<slug>"
+_LAST_FETCH_KEY_PREFIX = "last_successful_articles_fetch_at"
+
+
+def metadata_key_for_provider(provider_slug: str) -> str:
+    """Return the provider-scoped cooldown metadata key."""
+    if not provider_slug:
+        raise ValueError("provider_slug must be a non-empty string")
+    if ":" in provider_slug:
+        raise ValueError(f"provider_slug must not contain ':', got {provider_slug!r}")
+    return f"{_LAST_FETCH_KEY_PREFIX}:{provider_slug}"
