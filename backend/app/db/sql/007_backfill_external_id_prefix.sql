@@ -4,4 +4,4 @@
 
 UPDATE articles
 SET external_id = news_provider || ':' || external_id
-WHERE external_id NOT LIKE news_provider || ':%';
+WHERE INSTR(external_id, news_provider || ':') != 1;

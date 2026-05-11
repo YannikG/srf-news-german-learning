@@ -18,6 +18,6 @@ def namespace_external_id(news_provider: str, raw_id: str) -> str:
     if _SEPARATOR in news_provider:
         raise ValueError(f"news_provider must not contain '{_SEPARATOR}', got {news_provider!r}")
     prefix = f"{news_provider}{_SEPARATOR}"
-    if raw_id.startswith(prefix):
+    if raw_id.lower().startswith(prefix.lower()):
         return raw_id
     return f"{prefix}{raw_id}"
