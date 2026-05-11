@@ -89,6 +89,7 @@ def test_same_raw_id_different_providers_creates_two_rows(
         "release_date": "2025-01-01",
         "modification_date": None,
         "news_provider": "srgssr",
+        "language": None,
     }
     row_b = {
         **row_a,

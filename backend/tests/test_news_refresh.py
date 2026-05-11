@@ -329,6 +329,7 @@ class _FakeUpstream:
                     "release_date": "2024-01-01",
                     "modification_date": "2024-01-01",
                     "news_provider": self._provider,
+                    "language": None,
                 }
             ],
             next_cursor=None,

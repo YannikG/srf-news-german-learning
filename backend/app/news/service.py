@@ -24,10 +24,10 @@ __all__ = ["NewsRefreshError", "NewsRefreshService"]
 _UPSERT_ARTICLE_SQL = """
 INSERT INTO articles (
     external_id, publisher, provenance, title, lead, markdown_original,
-    release_date, modification_date, news_provider
+    release_date, modification_date, news_provider, language
 ) VALUES (
     :external_id, :publisher, :provenance, :title, :lead, :markdown_original,
-    :release_date, :modification_date, :news_provider
+    :release_date, :modification_date, :news_provider, :language
 )
 ON CONFLICT(external_id) DO UPDATE SET
     publisher = excluded.publisher,
@@ -37,7 +37,8 @@ ON CONFLICT(external_id) DO UPDATE SET
     markdown_original = excluded.markdown_original,
     release_date = excluded.release_date,
     modification_date = excluded.modification_date,
-    news_provider = excluded.news_provider
+    news_provider = excluded.news_provider,
+    language = excluded.language
 """
 
 _METADATA_UPSERT_SQL = """

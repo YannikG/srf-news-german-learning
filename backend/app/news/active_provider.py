@@ -5,7 +5,7 @@ from __future__ import annotations
 DEFAULT_NEWS_ACTIVE_PROVIDER = "srgssr"
 
 _ALLOWED_SLUGS = frozenset({"srgssr", "newsapi"})
-_IMPLEMENTED_SLUGS = frozenset({"srgssr"})
+_IMPLEMENTED_SLUGS = frozenset({"srgssr", "newsapi"})
 
 
 def resolve_configured_news_active_provider(raw: str | None) -> str:
@@ -26,7 +26,7 @@ def resolve_configured_news_active_provider(raw: str | None) -> str:
         )
     if text not in _IMPLEMENTED_SLUGS:
         raise ValueError(
-            f'Active ingest provider "{text}" is not implemented yet (roadmap P8-I04).',
+            f'Active ingest provider "{text}" is not implemented yet.',
         )
     return text
 

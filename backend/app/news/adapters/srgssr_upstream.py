@@ -107,5 +107,6 @@ class SrgSsrNewsUpstreamAdapter(NewsIngestUpstreamPort):
         for record in page.results:
             row = map_article_to_app_db_fields(record)
             row["news_provider"] = slug
+            row.setdefault("language", None)
             rows.append(row)
         return NormalizedArticlePage(rows=rows, next_cursor=page.cursor)
