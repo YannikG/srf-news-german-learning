@@ -82,3 +82,4 @@ def apply_default_config(app: Flask, test_config: Mapping[str, Any] | None) -> N
         read_int_env("OLLAMA_SHUTDOWN_WARNING_SECONDS", 60),
     )
     app.config.setdefault("OLLAMA_IDLE_START_POLL_THREAD", not app.config.get("TESTING", False))
+    app.config.setdefault("PONS_API_SECRET", os.environ.get("PONS_API_SECRET", ""))

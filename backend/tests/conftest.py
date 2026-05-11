@@ -15,12 +15,14 @@ from app.persistence.vectors_db import VectorsDatabase
 
 
 @pytest.fixture(autouse=True)
-def _reset_sidecar_http_client_after_test() -> Generator[None, None, None]:
-    """Avoid cross-test pollution from the process-wide sidecar ``httpx`` client."""
+def _reset_shared_http_clients_after_test() -> Generator[None, None, None]:
+    """Avoid cross-test pollution from process-wide shared ``httpx`` clients."""
     yield
+    from app.pons.client import reset_shared_pons_http_client
     from app.sidecar.client import reset_shared_sidecar_http_client
 
     reset_shared_sidecar_http_client()
+    reset_shared_pons_http_client()
 
 
 @pytest.fixture()

@@ -46,7 +46,8 @@ def test_api_health_not_shadowed_when_spa_present(tmp_path_factory: pytest.TempP
         tc = application.test_client()
         health = tc.get("/api/health")
         assert health.status_code == 200
-        assert health.get_json() == {"ok": True}
+        payload = health.get_json()
+        assert payload["ok"] is True
 
         root = tc.get("/")
         assert root.status_code == 200

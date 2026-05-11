@@ -17,6 +17,10 @@ health_bp = Blueprint("health", __name__)
 @health_bp.get("/health")
 def health() -> tuple[Response, int]:
     payload: dict = {"ok": True}
+
+    pons_secret = str(current_app.config.get("PONS_API_SECRET") or "").strip()
+    payload["pons"] = {"available": bool(pons_secret)}
+
     raw_base = current_app.config.get("SIDECAR_BASE_URL")
     base = str(raw_base or "").strip()
     if base:
