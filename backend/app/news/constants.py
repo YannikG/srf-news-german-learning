@@ -14,4 +14,8 @@ _LAST_FETCH_KEY_PREFIX = "last_successful_articles_fetch_at"
 
 def metadata_key_for_provider(provider_slug: str) -> str:
     """Return the provider-scoped cooldown metadata key."""
+    if not provider_slug:
+        raise ValueError("provider_slug must be a non-empty string")
+    if ":" in provider_slug:
+        raise ValueError(f"provider_slug must not contain ':', got {provider_slug!r}")
     return f"{_LAST_FETCH_KEY_PREFIX}:{provider_slug}"
