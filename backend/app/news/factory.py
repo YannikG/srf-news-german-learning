@@ -36,4 +36,9 @@ def build_default_news_refresh_service(app: Flask) -> NewsRefreshService:
         articles,
         news_provider=app.config["NEWS_ACTIVE_PROVIDER"],
     )
-    return NewsRefreshService(db, upstream, articles_limit=DEFAULT_REFRESH_ARTICLES_LIMIT)
+    return NewsRefreshService(
+        db,
+        upstream,
+        provider_slug=app.config["NEWS_ACTIVE_PROVIDER"],
+        articles_limit=DEFAULT_REFRESH_ARTICLES_LIMIT,
+    )

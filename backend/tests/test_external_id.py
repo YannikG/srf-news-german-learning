@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
-
 import pytest
 from freezegun import freeze_time
 from sqlalchemy import text
@@ -102,13 +100,12 @@ def test_same_raw_id_different_providers_creates_two_rows(
     _app, db = _make_app_and_db(tmp_path_factory)
     upstream_a = _FakeUpstream([row_a])
     upstream_b = _FakeUpstream([row_b])
-    svc_a = NewsRefreshService(db, upstream_a)
-    svc_b = NewsRefreshService(db, upstream_b)
+    svc_a = NewsRefreshService(db, upstream_a, provider_slug="srgssr")
+    svc_b = NewsRefreshService(db, upstream_b, provider_slug="newsapi")
 
-    with freeze_time("2025-06-01T10:00:00+00:00") as frozen:
+    with freeze_time("2025-06-01T10:00:00+00:00"):
         res_a = svc_a.refresh()
         assert res_a["articles_upserted"] == 1
-        frozen.tick(timedelta(seconds=900))
         res_b = svc_b.refresh()
         assert res_b["articles_upserted"] == 1
 
