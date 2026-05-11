@@ -6,12 +6,16 @@ import DataTable from 'primevue/datatable';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Message from 'primevue/message';
+import Popover from 'primevue/popover';
+import ProgressSpinner from 'primevue/progressspinner';
 import Select from 'primevue/select';
 import Textarea from 'primevue/textarea';
 import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import { reactive, ref, type Ref } from 'vue';
+import { usePonsLookup } from '@/composables/usePonsLookup';
 import { useWordsDictionary } from '@/composables/useWordsDictionary';
+import type { PonsHit } from '@/types/pons';
 import type { CefrLevel, Word, WordDifficulty } from '@/types/word';
 import { CEFR_LEVEL_FILTER_NONE, CEFR_LEVELS, WORD_DIFFICULTIES } from '@/types/word';
 
@@ -29,6 +33,73 @@ const {
   update,
   remove,
 } = useWordsDictionary();
+
+const { ponsAvailable, getState, lookup: ponsLookup } = usePonsLookup();
+
+const ponsPopoverRef = ref();
+const ponsPopoverWord = ref<string>('');
+const ponsPopoverHits = ref<PonsHit[]>([]);
+const ponsPopoverError = ref<string | null>(null);
+const ponsPopoverLoading = ref(false);
+
+async function onPonsLookup(row: Word, event: Event) {
+  ponsPopoverWord.value = row.german_label;
+  ponsPopoverHits.value = [];
+  ponsPopoverError.value = null;
+  ponsPopoverLoading.value = true;
+  ponsPopoverRef.value?.show(event);
+
+  const result = await ponsLookup(row.german_label);
+  ponsPopoverLoading.value = false;
+  if (result.ok) {
+    ponsPopoverHits.value = result.hits;
+    if (result.hits.length === 0) {
+      ponsPopoverError.value = 'Kein Treffer bei PONS gefunden.';
+    }
+  } else {
+    ponsPopoverError.value = result.message;
+  }
+}
+
+function extractFirstTarget(hits: PonsHit[]): string | null {
+  for (const hit of hits) {
+    if (hit.type === 'translation' && hit.target) {
+      return stripHtml(hit.target);
+    }
+    if (hit.type === 'entry' && hit.roms) {
+      for (const rom of hit.roms) {
+        for (const arab of rom.arabs) {
+          for (const tr of arab.translations) {
+            if (tr.target) return stripHtml(tr.target);
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function stripHtml(html: string): string {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent?.trim() ?? html;
+}
+
+function adoptPonsTranslation() {
+  const row = items.value.find((w) => w.german_label === ponsPopoverWord.value);
+  if (!row) return;
+  const target = extractFirstTarget(ponsPopoverHits.value);
+  if (!target) return;
+  ponsPopoverRef.value?.hide();
+  editingId.value = row.id;
+  form.german_label = row.german_label;
+  form.category = row.category;
+  form.translation = target;
+  form.difficulty = row.difficulty;
+  form.cefr_level = toFormCefr(row.cefr_level);
+  labelError.value = null;
+  dialogVisible.value = true;
+}
 
 const dialogVisible = ref(false);
 const editingId = ref<number | null>(null);
@@ -254,7 +325,22 @@ function confirmDelete(row: Word) {
         <Column field="german_label" header="Deutsch" />
         <Column field="category" header="Kategorie" />
         <Column field="difficulty" header="Schwierigkeit" style="width: 8rem" />
-        <Column field="translation" header="Übersetzung" />
+        <Column field="translation" header="Übersetzung">
+          <template #body="{ data }">
+            <span v-if="data.translation">{{ data.translation }}</span>
+            <Button
+              v-else-if="ponsAvailable"
+              type="button"
+              label="Übersetzung anzeigen"
+              size="small"
+              severity="secondary"
+              text
+              class="p-0 text-xs"
+              @click="onPonsLookup(data, $event)"
+            />
+            <span v-else class="text-slate-400">—</span>
+          </template>
+        </Column>
         <Column field="cefr_level" header="CEFR">
           <template #body="{ data }">
             {{ data.cefr_level ?? '—' }}
@@ -270,9 +356,18 @@ function confirmDelete(row: Word) {
             {{ formatTs(data.updated_at) }}
           </template>
         </Column>
-        <Column header="" style="width: 11rem" :exportable="false">
+        <Column header="" style="width: 14rem" :exportable="false">
           <template #body="{ data }">
             <div class="flex flex-wrap items-center gap-1">
+              <Button
+                v-if="ponsAvailable"
+                type="button"
+                label="PONS"
+                size="small"
+                severity="info"
+                outlined
+                @click="onPonsLookup(data, $event)"
+              />
               <Button
                 type="button"
                 label="Bearbeiten"
@@ -294,6 +389,50 @@ function confirmDelete(row: Word) {
         </Column>
       </DataTable>
     </div>
+
+    <Popover ref="ponsPopoverRef">
+      <div class="w-72 max-w-[90vw]">
+        <p class="mb-2 text-sm font-semibold text-slate-800">PONS: {{ ponsPopoverWord }}</p>
+        <div v-if="ponsPopoverLoading" class="flex items-center justify-center py-4">
+          <ProgressSpinner style="width: 2rem; height: 2rem" stroke-width="4" />
+        </div>
+        <div v-else-if="ponsPopoverError" class="text-sm text-red-600">
+          {{ ponsPopoverError }}
+        </div>
+        <div v-else>
+          <ul class="max-h-48 space-y-1 overflow-y-auto text-sm text-slate-700">
+            <template v-for="(hit, hi) in ponsPopoverHits" :key="hi">
+              <template v-if="hit.type === 'translation'">
+                <li class="rounded bg-slate-50 px-2 py-1">
+                  <span v-html="hit.target"></span>
+                </li>
+              </template>
+              <template v-else-if="hit.type === 'entry'">
+                <template v-for="(rom, ri) in hit.roms" :key="`${hi}-${ri}`">
+                  <template v-for="(arab, ai) in rom.arabs" :key="`${hi}-${ri}-${ai}`">
+                    <li
+                      v-for="(tr, ti) in arab.translations"
+                      :key="`${hi}-${ri}-${ai}-${ti}`"
+                      class="rounded bg-slate-50 px-2 py-1"
+                    >
+                      <span v-html="tr.target"></span>
+                    </li>
+                  </template>
+                </template>
+              </template>
+            </template>
+          </ul>
+          <Button
+            v-if="ponsPopoverHits.length > 0"
+            type="button"
+            label="In Feld übernehmen"
+            size="small"
+            class="mt-2 w-full"
+            @click="adoptPonsTranslation()"
+          />
+        </div>
+      </div>
+    </Popover>
 
     <Dialog
       v-model:visible="dialogVisible"

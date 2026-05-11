@@ -1,6 +1,6 @@
 # PONS Dictionary API (Kurzreferenz)
 
-Öffentliche Doku-Kernpunkte, normalisierte URLs (ohne Leerzeichen). **Nutzung in dieser App: optional** (siehe Abschnitt „Eignung“).
+Öffentliche Doku-Kernpunkte, normalisierte URLs (ohne Leerzeichen). **Nutzung in dieser App: optional** (siehe Abschnitt „Eignung").
 
 ## Offizielle Dokumentation
 
@@ -19,12 +19,12 @@ Vollständige API-Beschreibung (Parameter, Antwortschemata, Beispiele) als PDF:
 
 **Query**
 
-- `language` (ISO 639-1): Ausgabesprache der Labels, z. B. `de`, `en`, …; unsupported → Default Englisch.
+- `language` (ISO 639-1): Ausgabesprache der Labels, z. B. `de`, `en`, …; unsupported → Default Englisch.
 
-**Antwort (JSON):** Array von Objekten mit u. a.:
+**Antwort (JSON):** Array von Objekten mit u. a.:
 
-- `key`: interner Name (zwei Sprachen oft alphabetisch, z. B. `deen`)
-- `simple_label`, `directed_label` (Richtung z. B. `de » en`)
+- `key`: interner Name (zwei Sprachen oft alphabetisch, z. B. `deen`)
+- `simple_label`, `directed_label` (Richtung z. B. `de » en`)
 - `languages`: Liste der Sprachen
 
 ## `GET /v1/dictionary`
@@ -38,10 +38,10 @@ Vollständige API-Beschreibung (Parameter, Antwortschemata, Beispiele) als PDF:
 | Parameter | Pflicht | Beschreibung |
 |-----------|---------|--------------|
 | `q` | ja | Suchbegriff (UTF-8, URL-escaped) |
-| `l` | ja | Wörterbuch-Key (z. B. `deen`, `dees`; siehe PONS-Web-Suche) |
+| `l` | ja | Wörterbuch-Key (z. B. `deen`, `dees`; siehe PONS-Web-Suche) |
 | `in` | nein | Quellsprache des Suchterms (Richtung) |
 | `fm` | nein | `fm=1` → fuzzy matching |
-| `ref` | nein | `ref=true` → Referenzen (siehe Doku „References“) |
+| `ref` | nein | `ref=true` → Referenzen (siehe Doku „References") |
 | `language` | nein | Ausgabesprache der Metadaten (wie bei dictionaries) |
 
 **Beispiel**
@@ -64,8 +64,8 @@ X-Secret: <dein-secret>
 
 ## Antwortstruktur (vereinfacht)
 
-- Treffer in `hits`: u. a. `type: "entry"` mit `roms[]` → `arabs[]` → `translations[]` mit `source` / `target`; oder `type: "translation"` mit `source` / `target`.
-- Mit `ref=true`: u. a. `entry_with_secondary_entries` mit `primary_entry` und `secondary_entries`.
+- Treffer in `hits`: u. a. `type: "entry"` mit `roms[]` → `arabs[]` → `translations[]` mit `source` / `target`; oder `type: "translation"` mit `source` / `target`.
+- Mit `ref=true`: u. a. `entry_with_secondary_entries` mit `primary_entry` und `secondary_entries`.
 
 Details und Beispiele: [PONS Dictionary API (PDF)](https://en.pons.com/assets/docs/api_dict.pdf).
 
@@ -74,14 +74,61 @@ Details und Beispiele: [PONS Dictionary API (PDF)](https://en.pons.com/assets/do
 | Aspekt | Bewertung |
 |--------|------------|
 | **MVP Wörterbuch** | **Nicht nötig:** Nutzer trägt Übersetzungen selbst ein (Spec Phase 2/6). |
-| **Mehrwert** | **Ja:** **Nur auf Knopfdruck** (kein Dauerabruf): z. B. **„Übersetzung anzeigen“** wenn noch keine Nutzer-Übersetzung gespeichert ist, plus **„Definition holen“** / PONS-Vorschlag; passende `l`-Keys zu Einstellungen (`deen`, `deuk`, …), optional Fuzzy (`fm=1`); **„In Feld übernehmen“** optional getrennt vom Speichern. |
+| **Mehrwert** | **Ja:** **Nur auf Knopfdruck** (kein Dauerabruf): z. B. „Übersetzung anzeigen" wenn noch keine Nutzer-Übersetzung gespeichert ist, plus „Definition holen" / PONS-Vorschlag; passende `l`-Keys zu Einstellungen (`deen`, `deuk`, …), optional Fuzzy (`fm=1`); „In Feld übernehmen" optional getrennt vom Speichern. |
 | **Architektur** | Nur über **Backend-Proxy** (Secret nie an den Browser); Rate Limits und **503** sauber behandeln; Feature-Flag. |
-| **„Alles lokal“** | PONS ist **extern**; ohne Netzwerk oder bei strikt offline-only **deaktivieren**. |
+| **„Alles lokal"** | PONS ist **extern**; ohne Netzwerk oder bei strikt offline-only **deaktivieren**. |
 
 ## Rechtliches und Betrieb
 
-Nutzungsbedingungen, Schlüsselvergabe und Kontingente **bei PONS** klären; Secret nur in Umgebungsvariablen (z. B. `PONS_API_SECRET`).
+Nutzungsbedingungen, Schlüsselvergabe und Kontingente **bei PONS** klären; Secret nur in Umgebungsvariablen (z. B. `PONS_API_SECRET`).
+
+## Integration in dieser App
+
+### Feature-Flag und Env-Variable
+
+| Variable | Pflicht | Beschreibung |
+|----------|---------|--------------|
+| `PONS_API_SECRET` | nein | Secret für die PONS API. Leer oder fehlend = Feature deaktiviert. |
+
+In `backend/local.env` und `backend/.env.example` vorbereitet (auskommentiert).
+
+### Feature-Erkennung
+
+`GET /api/health` liefert `"pons": { "available": true }` wenn `PONS_API_SECRET` gesetzt ist. Das Frontend prüft dieses Feld und zeigt PONS-Buttons nur bei `available: true`.
+
+### Backend-Proxy-Route
+
+`GET /api/external/pons/dictionary?q=<term>&l=<dict>`
+
+- `q` (Pflicht): Suchbegriff
+- `l` (optional): Wörterbuch-Key. Falls leer, wird der Standard aus der `translation_language` Einstellung abgeleitet.
+
+Erlaubte Wörterbücher: `deen`, `deuk`, `dees`, `defr`, `deit`, `dept`.
+
+### Mapping `translation_language` → PONS `l`
+
+| `translation_language` | PONS `l` |
+|------------------------|----------|
+| `en` | `deen` |
+| `uk` | `deuk` |
+
+Fallback wenn kein Mapping existiert: `deen`.
+
+### Fehlerbehandlung
+
+| PONS-Status | Backend-Antwort | UI |
+|-------------|----------------|-----|
+| 200 | 200 mit `{ "hits": [...] }` | Treffer im Popover |
+| 204 | 200 mit `{ "hits": [] }` | „Kein Treffer" |
+| 403 | 502 | Fehlermeldung |
+| 503 | 503 | „Tageslimit erreicht" |
+
+### UI-Flow
+
+1. „Übersetzung anzeigen" in der Übersetzungsspalte (nur bei leerem Feld und `ponsAvailable`)
+2. „PONS" Button in der Aktionsspalte (immer bei `ponsAvailable`)
+3. Ergebnis in einem Popover; „In Feld übernehmen" öffnet den Bearbeitungsdialog mit dem PONS-Vorschlag, speichert aber nicht automatisch.
 
 ## Roadmap
 
-Umgesetzt als **optionales** Issue [P6-I06](../roadmap/phase-6/issues/P6-I06-optional-pons-on-demand.md): On-Demand-Proxy, UI **„Übersetzung anzeigen“** für leere Felder, kein Batch.
+Umgesetzt in Issue [P6-I06](../roadmap/phase-6/issues/P6-I06-optional-pons-on-demand.md): On-Demand-Proxy, UI „Übersetzung anzeigen" für leere Felder, kein Batch.

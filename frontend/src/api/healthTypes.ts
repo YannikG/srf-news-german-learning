@@ -6,9 +6,15 @@ export interface SidecarHealthPayload {
   ollama?: { state: string; name?: string };
 }
 
+/** PONS feature flag from ``GET /api/health``. */
+export interface PonsHealthPayload {
+  available: boolean;
+}
+
 /** Subset of ``GET /api/health`` JSON. */
 export interface HealthPayload {
   ok: boolean;
+  pons?: PonsHealthPayload;
   sidecar?: SidecarHealthPayload;
 }
 
